@@ -50,14 +50,17 @@
 | phase-06/CONTEXT.md | [검증됨] | `.planning/phase-06-integration-deploy/CONTEXT.md` — Phase 6 컨텍스트 |
 | phase-06/01-state-management.PLAN.md | [검증됨] | `.planning/phase-06-integration-deploy/01-state-management.PLAN.md` — Wave 1 플랜 |
 | phase-06/02-e2e-deploy.PLAN.md | [검증됨] | `.planning/phase-06-integration-deploy/02-e2e-deploy.PLAN.md` — Wave 2 플랜 |
+| phase-05/PLAN.md | [검증됨] | `.planning/phase-05-video-source/PLAN.md` — Phase 5 메인 플랜 |
+| phase-05/CONTEXT.md | [검증됨] | `.planning/phase-05-video-source/CONTEXT.md` — Phase 5 컨텍스트 |
+| phase-05/01-scene-parser.PLAN.md | [검증됨] | `.planning/phase-05-video-source/01-scene-parser.PLAN.md` — Wave 1 플랜 |
+| phase-05/02-tab-integration.PLAN.md | [검증됨] | `.planning/phase-05-video-source/02-tab-integration.PLAN.md` — Wave 2 플랜 |
 | RETROSPECTIVE.md | 미생성 | — |
 
 ## Next Actions
 
-1. Phase 5 계획 생성 (`/gsd-plan-phase 5`)
-2. Phase 5 구현 시작 (`/gsd-execute-phase 5`)
-3. Phase 6 구현 시작 (`/gsd-execute-phase 6`) — Phase 5 완료 후
-4. Vercel 대시보드에서 `ANTHROPIC_API_KEY` 환경변수(Secret) 설정
+1. Phase 5 구현 시작 (`/gsd-execute-phase 5`)
+2. Phase 6 구현 시작 (`/gsd-execute-phase 6`) — Phase 5 완료 후
+3. Vercel 대시보드에서 `ANTHROPIC_API_KEY` 환경변수(Secret) 설정
 
 ## Git History
 
