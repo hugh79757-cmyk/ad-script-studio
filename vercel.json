@@ -28,6 +28,10 @@
       "dest": "/api/$1"
     },
     {
+      "src": "/review/(.*)",
+      "dest": "/client-review.html"
+    },
+    {
       "src": "/(.*\\.(html|js|css|json|md|png|jpg|svg|ico|woff|woff2|ttf|eot))",
       "dest": "/$1"
     },

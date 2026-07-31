@@ -1,4 +1,4 @@
-// app.js — 이벤트 바인딩 + 태그 입력 UI + 탭 전환 + 검증
+// app.js — 이벤트 바인딩 + 태그 입력 UI + 탭 전환 + 검증 + 자동 조사
 // DOM 로드 완료 후 초기화
 document.addEventListener('DOMContentLoaded', () => {
   initInputBindings();
@@ -8,7 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initModeToggle();  // Phase 4: 수동/자동 모드 전환 초기화
   initPhase3();  // Phase 3: 당위성 엔진 초기화
   initToolTabs();  // Phase 5: 도구 탭 전환 초기화
-  initTabPersistence();  // Phase 6: 탭 상태 복원 (sessionStorage)
+  initAutoResearch();  // 자동 조사 초기화
+  initFieldSourceTracking();  // 필드 출처 추적 초기화
 });
 
 // 1. 입력 필드 → state 바인딩
@@ -471,6 +472,9 @@ function renderAutoResult(result) {
     <button id="transferBtn" class="transfer-btn" type="button">
       2번으로 보내기 →
     </button>
+    <button id="shareReviewBtn" class="share-link-btn" type="button">
+      📋 고객 공유 링크 복사
+    </button>
   `;
   strategyEl.appendChild(transferDiv);
   
@@ -485,6 +489,11 @@ function renderAutoResult(result) {
     transferToVideoGenerator();
   });
   
+  // "고객 공유 링크 복사" 버튼 바인딩
+  document.getElementById('shareReviewBtn').addEventListener('click', async () => {
+    await createReviewLink(result);
+  });
+  
   // 결과 영역 표시 + 전략 탭 활성화
   document.querySelectorAll('.result-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.result-content').forEach(c => c.classList.remove('active'));
@@ -495,4 +504,262 @@ function renderAutoResult(result) {
 // 16. 에러 표시
 function showError(message) {
   alert(message);
+}
+
+// === 자동 조사 시스템 ===
+
+// 17. 토스트 알림
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  
+  // 애니메이션 시작
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+  });
+  
+  // 3초 후 제거
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// 18. 필드 출처 추적 초기화
+function initFieldSourceTracking() {
+  // 자동 조사로 채워진 필드를 추적
+  const autoFields = ['competitorInfo', 'priceRange', 'reviewExcerpts', 'trustFactors'];
+  
+  autoFields.forEach(field => {
+    const el = document.getElementById(field);
+    if (!el) return;
+    
+    // 사용자가 직접 수정하면 'user'로 마킹
+    const eventHandler = () => {
+      if (getFieldSource(field) === 'auto-research') {
+        setFieldSource(field, 'user');
+        clearAutoResearchedUI(field);
+      }
+    };
+    
+    el.addEventListener('input', eventHandler);
+    el.addEventListener('change', eventHandler);
+    
+    // 태그 입력의 경우 별도 처리 (trustFactors)
+    if (field === 'trustFactors') {
+      const tagContainer = document.getElementById('trustFactorsTagInput');
+      if (tagContainer) {
+        tagContainer.addEventListener('click', () => {
+          if (getFieldSource(field) === 'auto-research') {
+            setFieldSource(field, 'user');
+            clearAutoResearchedUI(field);
+          }
+        });
+      }
+    }
+  });
+}
+
+// 19. 자동 조사 UI 초기화
+function initAutoResearch() {
+  const btn = document.getElementById('autoResearchBtn');
+  if (!btn) return;
+  
+  btn.addEventListener('click', runAutoResearch);
+}
+
+// 20. 자동 조사 실행
+async function runAutoResearch() {
+  const brandName = document.getElementById('brandName')?.value?.trim();
+  const productName = document.getElementById('productName')?.value?.trim();
+  
+  if (!brandName && !productName) {
+    showToast('브랜드명 또는 제품명을 먼저 입력해주세요.', 'warning');
+    return;
+  }
+  
+  const btn = document.getElementById('autoResearchBtn');
+  btn.disabled = true;
+  btn.querySelector('.spinner-small').style.display = 'block';
+  
+  showToast('자동 조사를 시작합니다...', 'info');
+  
+  try {
+    const baseUrl = window.location.origin;
+    const response = await fetch(`${baseUrl}/api/research`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brandName, productName })
+    });
+    
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || `API 오류: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || '자동 조사 실패');
+    }
+    
+    const data = result.data;
+    let filledCount = 0;
+    
+    // 경쟁사信息 채우기
+    if (data.competitors && typeof data.competitors === 'string' && data.competitors.trim()) {
+      fillField('competitorInfo', data.competitors.trim());
+      filledCount++;
+    }
+    
+    // 가격대 채우기
+    if (data.priceRange && typeof data.priceRange === 'string' && data.priceRange.trim()) {
+      fillField('priceRange', data.priceRange.trim());
+      filledCount++;
+    }
+    
+    // 리뷰 발췌 채우기
+    if (data.reviews && Array.isArray(data.reviews) && data.reviews.length > 0) {
+      const reviewText = data.reviews.join('\n');
+      fillField('reviewExcerpts', reviewText);
+      filledCount++;
+    }
+    
+    // 브랜드 신뢰요소 채우기
+    if (data.trustFactors && Array.isArray(data.trustFactors) && data.trustFactors.length > 0) {
+      fillTrustFactors(data.trustFactors);
+      filledCount++;
+    }
+    
+    if (filledCount > 0) {
+      showToast(`자동 조사 완료 — ${filledCount}개 필드가 채워졌습니다. 검토 후 수정하세요.`, 'success');
+    } else {
+      showToast('자동 조사 결과를 찾을 수 없습니다. 직접 입력해주세요.', 'warning');
+    }
+    
+    // 에러가 있었으면 표시
+    if (result.errors && result.errors.length > 0) {
+      console.warn('[자동 조사] 일부 쿼리 실패:', result.errors);
+    }
+    
+  } catch (err) {
+    console.error('[자동 조사] 오류:', err);
+    showToast(`자동 조사 실패: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.querySelector('.spinner-small').style.display = 'none';
+  }
+}
+
+// 21. 필드 채우기 + 자동 조사 UI 표시
+function fillField(fieldId, value) {
+  const el = document.getElementById(fieldId);
+  if (!el) return;
+  
+  el.value = value;
+  
+  // 상태 업데이트
+  if (typeof updateState === 'function') {
+    if (fieldId === 'reviewExcerpts') {
+      const excerpts = parseReviewExcerpts(value);
+      updateState('reviewExcerpts', excerpts);
+    } else {
+      updateState(fieldId, value);
+    }
+  }
+  
+  // 출처 마킹
+  if (typeof setFieldSource === 'function') {
+    setFieldSource(fieldId, 'auto-research');
+  }
+  
+  // 자동 조사 UI 표시
+  showAutoResearchedUI(fieldId);
+}
+
+// 22. 태그 필드(신뢰요소) 채우기
+function fillTrustFactors(factors) {
+  const container = document.getElementById('trustFactorsTagInput');
+  if (!container) return;
+  
+  // 기존 태그 유지하면서 추가
+  factors.forEach(factor => {
+    if (typeof addArrayItem === 'function') {
+      addArrayItem('trustFactors', factor);
+    }
+  });
+  
+  if (typeof renderTags === 'function') {
+    renderTags(container, 'trustFactors');
+  }
+  
+  // 출처 마킹
+  if (typeof setFieldSource === 'function') {
+    setFieldSource('trustFactors', 'auto-research');
+  }
+  
+  showAutoResearchedUI('trustFactors');
+}
+
+// 23. 자동 조사 UI 표시
+function showAutoResearchedUI(fieldId) {
+  const label = document.getElementById(`label-${fieldId}`);
+  const group = document.getElementById(`group-${fieldId}`);
+  
+  if (label) label.classList.add('visible');
+  if (group) group.classList.add('auto-researched');
+}
+
+// 24. 자동 조사 UI 제거
+function clearAutoResearchedUI(fieldId) {
+  const label = document.getElementById(`label-${fieldId}`);
+  const group = document.getElementById(`group-${fieldId}`);
+  
+  if (label) label.classList.remove('visible');
+  if (group) group.classList.remove('auto-researched');
+}
+
+// === 고객 검토 링크 생성 ===
+
+// 25. 검토 링크 생성 + 클립보드 복사
+async function createReviewLink(result) {
+  try {
+    const baseUrl = window.location.origin;
+    const response = await fetch(`${baseUrl}/api/review`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        brandName: appState.brandName,
+        productName: appState.productName,
+        script: result.script || null,
+        rationale: result.rationale || [],
+        strategy: result.strategy || null
+      })
+    });
+    
+    if (!response.ok) throw new Error('리뷰 생성 실패');
+    
+    const data = await response.json();
+    const reviewUrl = `${baseUrl}/review/${data.id}`;
+    
+    // 클립보드에 복사
+    try {
+      await navigator.clipboard.writeText(reviewUrl);
+      showToast('고객 검토 링크가 클립보드에 복사되었습니다.', 'success');
+    } catch {
+      // clipboard API 실패 시 프롬프트로 대체
+      prompt('아래 링크를 복사하여 고객에게 전달하세요:', reviewUrl);
+    }
+    
+    return reviewUrl;
+  } catch (err) {
+    console.error('[검토 링크] 오류:', err);
+    showToast('검토 링크 생성에 실패했습니다.', 'error');
+    return null;
+  }
 }

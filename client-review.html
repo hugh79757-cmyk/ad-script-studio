@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>기획안 검토 — AD SCRIPT STUDIO</title>
+<style>
+/* 다크테마 CSS 변수 — 메인 앱과 동일 */
+:root {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #1a1a1a;
+  --bg-card: #222222;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666666;
+  --border-color: #333333;
+  --accent-color: #4a9eff;
+  --error-color: #ff4a4a;
+  --success-color: #4aff4a;
+  --tag-bg: #2a2a2a;
+  --tag-border: #444444;
+  --yellow-bg: #3d3520;
+  --yellow-border: #b8960a;
+  --green-bg: #1a3a1a;
+  --green-border: #4ade80;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+.review-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+/* 헤더 */
+.review-header {
+  text-align: center;
+  padding: 40px 24px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 32px;
+}
+
+.review-header .logo {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent-color);
+  margin-bottom: 8px;
+}
+
+.review-header .project-name {
+  font-size: 20px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.review-header .project-meta {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* 섹션 */
+.section {
+  margin-bottom: 32px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* 타임라인 */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 16px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.timeline-time {
+  flex-shrink: 0;
+  width: 80px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-color);
+}
+
+.timeline-type {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.timeline-dialogue {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.timeline-direction {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 4px;
+}
+
+/* 근거 카드 */
+.rationale-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rationale-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid var(--accent-color);
+}
+
+.rationale-card[data-type="TYPE_HOOK"] { border-left-color: #4CAF50; }
+.rationale-card[data-type="TYPE_CTA"] { border-left-color: #2196F3; }
+.rationale-card[data-type="TYPE_PSYCH"] { border-left-color: #FF9800; }
+
+.rationale-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.principle-id {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-color);
+  background: var(--bg-card);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.principle-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.principle-type {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: white;
+  margin-left: auto;
+}
+
+.rationale-reason {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+/* 그라운딩 블록 (인용 태그) */
+.grounding-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.grounding-block .label {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* 액션 버튼 */
+.review-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  padding: 32px 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.action-btn {
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.approve-btn {
+  background: var(--success-color);
+  color: #000;
+}
+
+.approve-btn:hover {
+  background: #3de03d;
+}
+
+.reject-btn {
+  background: transparent;
+  border: 2px solid var(--error-color);
+  color: var(--error-color);
+}
+
+.reject-btn:hover {
+  background: var(--error-color);
+  color: white;
+}
+
+/* 수정 요청 메모 */
+.memo-section {
+  display: none;
+  margin-top: 16px;
+}
+
+.memo-section.visible {
+  display: block;
+}
+
+.memo-section textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  resize: vertical;
+  margin-bottom: 12px;
+}
+
+.memo-section textarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.submit-memo-btn {
+  padding: 10px 24px;
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* 상태 표시 */
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status-pending {
+  background: var(--yellow-bg);
+  border: 1px solid var(--yellow-border);
+  color: #e0c200;
+}
+
+.status-approved {
+  background: var(--green-bg);
+  border: 1px solid var(--green-border);
+  color: var(--success-color);
+}
+
+.status-rejected {
+  background: #3a1a1a;
+  border: 1px solid var(--error-color);
+  color: var(--error-color);
+}
+
+/* 토스트 */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  z-index: 1000;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.3s;
+}
+
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.toast.success { border-color: var(--success-color); }
+.toast.error { border-color: var(--error-color); }
+
+/* 로딩 */
+.loading {
+  text-align: center;
+  padding: 48px;
+  color: var(--text-muted);
+}
+
+/* 에러 */
+.error-message {
+  text-align: center;
+  padding: 48px;
+  color: var(--error-color);
+}
+</style>
+</head>
+<body>
+
+<div class="review-container" id="app">
+  <div class="loading" id="loading">로딩 중...</div>
+  <div id="content" style="display:none;"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  // URL에서 project ID 추출 (/review/xxx 또는 ?id=xxx)
+  const pathParts = window.location.pathname.split('/');
+  const projectId = pathParts[pathParts.length - 1] || new URLSearchParams(window.location.search).get('id');
+
+  if (!projectId || projectId === 'review' || projectId === 'client-review.html') {
+    document.getElementById('loading').innerHTML = '<div class="error-message">유효한 프로젝트 ID가 없습니다.</div>';
+    return;
+  }
+
+  // 서버에서 리뷰 데이터 로드
+  loadReview(projectId);
+
+  async function loadReview(id) {
+    try {
+      const baseUrl = window.location.origin;
+      const response = await fetch(`${baseUrl}/api/review?id=${id}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          document.getElementById('loading').innerHTML = 
+            '<div class="error-message">해당 기획안을 찾을 수 없습니다.<br>링크를 다시 확인해주세요.</div>';
+          return;
+        }
+        throw new Error(`서버 오류: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      renderReview(data);
+    } catch (err) {
+      document.getElementById('loading').innerHTML = 
+        `<div class="error-message">데이터 로드 실패: ${err.message}</div>`;
+    }
+  }
+
+  function renderReview(data) {
+    document.getElementById('loading').style.display = 'none';
+    const container = document.getElementById('content');
+    container.style.display = 'block';
+
+    const projectName = data.brandName && data.productName 
+      ? `${data.brandName} — ${data.productName}` 
+      : '기획안 검토';
+
+    let html = `
+      <!-- 헤더 -->
+      <div class="review-header">
+        <div class="logo">AD SCRIPT STUDIO</div>
+        <div class="project-name">${escHtml(projectName)}</div>
+        <div class="project-meta">
+          검토 대상 기획안 · ${data.createdAt ? new Date(data.createdAt).toLocaleDateString('ko-KR') : ''}
+          ${data.status ? ` · <span class="status-badge status-${data.status}">${
+            data.status === 'approved' ? '승인됨' : 
+            data.status === 'rejected' ? '수정 요청됨' : '검토 대기'
+          }</span>` : ''}
+        </div>
+      </div>
+    `;
+
+    // 1. 대본 타임라인 (60초)
+    if (data.script && data.script.scenes && data.script.scenes.length > 0) {
+      html += `
+        <div class="section">
+          <div class="section-title">대본 타임라인</div>
+          <div class="timeline">
+            ${data.script.scenes.map(scene => `
+              <div class="timeline-item">
+                <div class="timeline-time">${escHtml(scene.time || '')}</div>
+                <div>
+                  <div class="timeline-type">${escHtml(scene.type || '')}</div>
+                  <div class="timeline-dialogue">${escHtml(scene.dialogue || '')}</div>
+                  ${scene.direction ? `<div class="timeline-direction">연출: ${escHtml(scene.direction)}</div>` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // 2. 적용된 전략 근거
+    if (data.rationale && data.rationale.length > 0) {
+      const typeLabels = { TYPE_HOOK: '훅', TYPE_CTA: 'CTA', TYPE_PSYCH: '심리' };
+      const typeColors = { TYPE_HOOK: '#4CAF50', TYPE_CTA: '#2196F3', TYPE_PSYCH: '#FF9800' };
+      
+      html += `
+        <div class="section">
+          <div class="section-title">적용된 전략 근거</div>
+          <div class="rationale-cards">
+            ${data.rationale.map(item => `
+              <div class="rationale-card" data-type="${item.type}">
+                <div class="rationale-header">
+                  <span class="principle-id">${escHtml(item.principleId || '')}</span>
+                  <span class="principle-name">${escHtml(item.principleName || '')}</span>
+                  <span class="principle-type" style="background-color: ${typeColors[item.type] || '#666'}">${typeLabels[item.type] || item.type}</span>
+                </div>
+                <div class="rationale-reason">${escHtml(item.reason || '')}</div>
+                ${item.usedFields && item.usedFields.length > 0 ? `
+                  <div class="grounding-block">
+                    <span class="label">근거: </span>
+                    ${item.usedFields.map(f => {
+                      const labels = { target: '타겟', concept: '컨셉', reviews: '리뷰 발췌', price: '가격대', competitor: '경쟁사', trustFactors: '브랜드 신뢰요소' };
+                      return labels[f] || f;
+                    }).join(', ')}
+                  </div>
+                ` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // 3. 액션 버튼
+    html += `
+      <div class="review-actions" id="reviewActions">
+        <button class="action-btn approve-btn" onclick="handleApprove()">기획안 승인</button>
+        <button class="action-btn reject-btn" onclick="showMemo()">수정 요청</button>
+      </div>
+      <div class="memo-section" id="memoSection">
+        <textarea id="memoInput" placeholder="수정이 필요한 사항을 입력해주세요..."></textarea>
+        <button class="submit-memo-btn" onclick="handleReject()">수정 요청 제출</button>
+      </div>
+    `;
+
+    container.innerHTML = html;
+
+    // 이미 처리된 상태라면 버튼 숨기기
+    if (data.status && data.status !== 'pending') {
+      const actions = document.getElementById('reviewActions');
+      if (actions) actions.style.display = 'none';
+    }
+  }
+
+  // 승인 처리
+  window.handleApprove = async function() {
+    await updateStatus('approved', '');
+  };
+
+  // 수정 요청 메모 표시
+  window.showMemo = function() {
+    document.getElementById('memoSection').classList.toggle('visible');
+  };
+
+  // 수정 요청 처리
+  window.handleReject = async function() {
+    const memo = document.getElementById('memoInput').value.trim();
+    if (!memo) {
+      showToast('수정 사항을 입력해주세요.', 'error');
+      return;
+    }
+    await updateStatus('rejected', memo);
+  };
+
+  // 상태 업데이트 API 호출
+  async function updateStatus(status, memo) {
+    try {
+      const baseUrl = window.location.origin;
+      const response = await fetch(`${baseUrl}/api/review`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: projectId,
+          status: status,
+          memo: memo,
+          reviewedAt: new Date().toISOString()
+        })
+      });
+
+      if (!response.ok) throw new Error('상태 업데이트 실패');
+
+      showToast(
+        status === 'approved' ? '승인되었습니다.' : '수정 요청이 전송되었습니다.',
+        'success'
+      );
+
+      // 버튼 비활성화
+      const actions = document.getElementById('reviewActions');
+      if (actions) actions.style.display = 'none';
+      const memoSection = document.getElementById('memoSection');
+      if (memoSection) memoSection.classList.remove('visible');
+      
+    } catch (err) {
+      showToast('처리 중 오류가 발생했습니다.', 'error');
+    }
+  }
+
+  function showToast(msg, type) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = `toast ${type} show`;
+    setTimeout(() => { toast.className = 'toast'; }, 3000);
+  }
+
+  function escHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+  }
+})();
+</script>
+</body>
+</html>

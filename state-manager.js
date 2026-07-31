@@ -72,6 +72,40 @@ function resetState() {
   window.dispatchEvent(new CustomEvent('stateReset'));
 }
 
+// === 자동 조사 출처 추적 ===
+// 각 필드의 출처를 추적: 'user' | 'auto-research'
+const fieldSourceMap = {};
+
+/**
+ * 필드 출처 설정
+ * @param {string} field - 필드명
+ * @param {string} source - 'user' | 'auto-research'
+ */
+function setFieldSource(field, source) {
+  fieldSourceMap[field] = source;
+  window.dispatchEvent(new CustomEvent('fieldSourceChange', {
+    detail: { field, source }
+  }));
+}
+
+/**
+ * 필드 출처 조회
+ * @param {string} field - 필드명
+ * @returns {string} 'user' | 'auto-research' | 'none'
+ */
+function getFieldSource(field) {
+  return fieldSourceMap[field] || 'none';
+}
+
+/**
+ * 필드 출처 초기화
+ */
+function resetFieldSources() {
+  Object.keys(fieldSourceMap).forEach(key => {
+    delete fieldSourceMap[key];
+  });
+}
+
 // === Phase 6: 탭 간 상태 전달 ===
 
 // 탭 상태 관리

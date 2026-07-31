@@ -108,11 +108,33 @@ function getFieldLabel(fieldKey) {
 }
 
 /**
- * 인용 태그 생성
+ * 인용 태그 생성 (출처 구분 포함)
+ * @param {Array} usedFields - 사용된 필드 키 목록
+ * @param {Object} fieldSources - 필드별 출처 맵 (선택)
+ * @returns {string} 인용 태그 문자열
+ */
+function generateGroundingTag(usedFields, fieldSources) {
+  if (!usedFields || usedFields.length === 0) return '';
+  
+  const labels = usedFields.map(f => {
+    const label = getFieldLabel(f);
+    // 출처가 있으면 표시 (관리자용 — PDF에서는 미표시)
+    if (fieldSources && fieldSources[f]) {
+      const sourceLabel = fieldSources[f] === 'auto-research' ? '자동조사' : '사용자입력';
+      return `${label}[${sourceLabel}]`;
+    }
+    return label;
+  });
+  
+  return ` (근거: ${labels.join(', ')})`;
+}
+
+/**
+ * 인용 태그 생성 (PDF용 — 출처 구분 없이 깔끔하게)
  * @param {Array} usedFields - 사용된 필드 키 목록
  * @returns {string} 인용 태그 문자열
  */
-function generateGroundingTag(usedFields) {
+function generatePDFGroundingTag(usedFields) {
   if (!usedFields || usedFields.length === 0) return '';
   const labels = usedFields.map(f => getFieldLabel(f));
   return ` (근거: ${labels.join(', ')})`;
@@ -441,8 +463,14 @@ function generateRationaleManually(state, principles = PRINCIPLES) {
       return;
     }
     
-    // 그라운딩 규칙 2: 인용 태그 생성
-    const groundingTag = generateGroundingTag(result.usedFields);
+    // 그라운딩 규칙 2: 인용 태그 생성 (출처 구분 포함)
+    const fieldSources = {};
+    if (typeof getFieldSource === 'function') {
+      result.usedFields.forEach(f => {
+        fieldSources[f] = getFieldSource(f);
+      });
+    }
+    const groundingTag = generateGroundingTag(result.usedFields, fieldSources);
     
     generated.push({
       principleId: principle.id,
@@ -631,6 +659,7 @@ if (typeof window !== 'undefined') {
   window.generateRationaleSummary = generateRationaleSummary;
   window.getFieldLabel = getFieldLabel;
   window.generateGroundingTag = generateGroundingTag;
+  window.generatePDFGroundingTag = generatePDFGroundingTag;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -644,6 +673,7 @@ if (typeof module !== 'undefined' && module.exports) {
     renderRationaleCards,
     generateRationaleSummary,
     getFieldLabel,
-    generateGroundingTag
+    generateGroundingTag,
+    generatePDFGroundingTag
   };
 }

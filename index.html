@@ -11,6 +11,11 @@
 <!-- 좌측: 입력 패널 -->
 <div class="input-panel">
 <h1 style="font-size: 20px; margin-bottom: 24px; color: var(--text-primary);">전략 제안서 생성기</h1>
+<!-- 자동 조사 버튼 -->
+<button type="button" class="auto-research-btn" id="autoResearchBtn">
+  <span class="spinner-small"></span>
+  🔍 브랜드명 + 제품명만 입력하고 자동 조사 실행
+</button>
 <!-- 모드 전환 토글 -->
 <div class="mode-toggle-container">
   <span class="mode-label" id="modeLabel">수동 모드</span>
@@ -66,27 +71,31 @@
 <hr class="section-divider">
 <div class="section-label">당위성 근거용 원자료</div>
 <!-- 신규 5개 필드 -->
-<div class="form-group">
+<div class="form-group" id="group-competitorInfo">
 <label>경쟁사명 / 차이점</label>
 <textarea id="competitorInfo" placeholder="경쟁 제품과의 차별점을 입력하면 더 설득력 있는 전략이 나옵니다" data-field="competitorInfo"></textarea>
 <div class="form-hint">경쟁 제품과의 차별점을 입력하면 더 설득력 있는 전략이 나옵니다</div>
+<div class="auto-researched-label" id="label-competitorInfo">🔍 자동 조사됨 — 검토 후 수정하세요</div>
 </div>
-<div class="form-group">
+<div class="form-group" id="group-priceRange">
 <label>가격대</label>
 <input type="text" id="priceRange" placeholder="예: 39,000원, 첫 구매 시 할인" data-field="priceRange">
 <div class="form-hint">가격 정보가 있으면 구매 장벽 분석에 활용됩니다</div>
+<div class="auto-researched-label" id="label-priceRange">🔍 자동 조사됨 — 검토 후 수정하세요</div>
 </div>
-<div class="form-group">
+<div class="form-group" id="group-reviewExcerpts">
 <label>리뷰 발췌</label>
 <textarea id="reviewExcerpts" placeholder="실제 고객이 쓴 표현을 그대로 넣으면 더 설득력 있는 카피가 나옵니다&#10;(줄바꿈으로 구분하여 여러 건 입력)" data-field="reviewExcerpts"></textarea>
 <div class="form-hint">실제 고객이 쓴 표현을 그대로 넣으면 더 설득력 있는 카피가 나옵니다 (줄바꿈으로 구분)</div>
+<div class="auto-researched-label" id="label-reviewExcerpts">🔍 자동 조사됨 — 검토 후 수정하세요</div>
 </div>
-<div class="form-group">
+<div class="form-group" id="group-trustFactors">
 <label>브랜드 신뢰요소</label>
 <div class="tag-input-container" id="trustFactorsTagInput">
 <input type="text" class="tag-input" placeholder="입력 후 Enter (예: 식약처 인증)">
 </div>
 <div class="form-hint">수상내역, 판매량, 인증 등 신뢰 요소를 입력하세요</div>
+<div class="auto-researched-label" id="label-trustFactors">🔍 자동 조사됨 — 검토 후 수정하세요</div>
 </div>
 <div class="form-group">
 <label>제외키워드</label>
@@ -163,5 +172,7 @@
 <script src="template-video.js"></script>
 <script src="video-ui.js"></script>
 <script src="app.js"></script>
+<!-- 토스트 컨테이너 -->
+<div class="toast-container" id="toastContainer"></div>
 </body>
 </html>

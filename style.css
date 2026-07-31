@@ -747,3 +747,129 @@ input:checked + .toggle-slider:before {
   padding: 8px;
   border-radius: 4px;
 }
+
+/* === 자동 조사 === */
+
+/* 자동 조사 버튼 */
+.auto-research-btn {
+  width: 100%;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #b8960a, #e0c200);
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.auto-research-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.auto-research-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.auto-research-btn .spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0,0,0,0.2);
+  border-top: 2px solid #000;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  display: none;
+}
+
+.auto-research-btn:disabled .spinner-small {
+  display: block;
+}
+
+/* 자동 조사된 필드 라벨 */
+.auto-researched-label {
+  display: none;
+  font-size: 11px;
+  color: #e0c200;
+  margin-top: 4px;
+  padding: 3px 8px;
+  background: var(--yellow-bg);
+  border: 1px solid var(--yellow-border);
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.auto-researched-label.visible {
+  display: inline-block;
+}
+
+/* 자동 조사된 필드 배경 */
+.form-group.auto-researched input,
+.form-group.auto-researched textarea {
+  background: var(--yellow-bg) !important;
+  border-color: var(--yellow-border) !important;
+}
+
+.form-group.auto-researched label::after {
+  content: ' 🔍';
+}
+
+/* 토스트 알림 */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  padding: 12px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  transform: translateX(120%);
+  opacity: 0;
+  transition: all 0.3s ease;
+  max-width: 400px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.toast.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.toast.success { border-left: 4px solid var(--success-color); }
+.toast.error { border-left: 4px solid var(--error-color); }
+.toast.info { border-left: 4px solid var(--accent-color); }
+.toast.warning { border-left: 4px solid #e0c200; }
+
+/* 고객 리뷰 링크 복사 버튼 */
+.share-link-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.share-link-btn:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
