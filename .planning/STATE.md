@@ -46,13 +46,18 @@
 | app.js (Phase 4 업데이트) | [검증됨] | `app.js` — API 호출 로직 + 모드 전환 UI + 로딩 스피너 |
 | index.html (Phase 4 업데이트) | [검증됨] | `index.html` — 모드 전환 토글 + 로딩 스피너 HTML |
 | style.css (Phase 4 업데이트) | [검증됨] | `style.css` — 토글 스위치 + 로딩 스피너 스타일 |
+| phase-06/PLAN.md | [검증됨] | `.planning/phase-06-integration-deploy/PLAN.md` — Phase 6 메인 플랜 |
+| phase-06/CONTEXT.md | [검증됨] | `.planning/phase-06-integration-deploy/CONTEXT.md` — Phase 6 컨텍스트 |
+| phase-06/01-state-management.PLAN.md | [검증됨] | `.planning/phase-06-integration-deploy/01-state-management.PLAN.md` — Wave 1 플랜 |
+| phase-06/02-e2e-deploy.PLAN.md | [검증됨] | `.planning/phase-06-integration-deploy/02-e2e-deploy.PLAN.md` — Wave 2 플랜 |
 | RETROSPECTIVE.md | 미생성 | — |
 
 ## Next Actions
 
-1. Phase 5 구현 시작 (`/gsd-execute-phase 5`)
-2. Vercel 대시보드에서 `ANTHROPIC_API_KEY` 환경변수(Secret) 설정
-3. 자동 모드 E2E 테스트 (API 호출 → 결과 표시)
+1. Phase 5 계획 생성 (`/gsd-plan-phase 5`)
+2. Phase 5 구현 시작 (`/gsd-execute-phase 5`)
+3. Phase 6 구현 시작 (`/gsd-execute-phase 6`) — Phase 5 완료 후
+4. Vercel 대시보드에서 `ANTHROPIC_API_KEY` 환경변수(Secret) 설정
 
 ## Git History
 
