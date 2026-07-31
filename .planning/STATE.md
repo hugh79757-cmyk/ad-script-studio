@@ -6,8 +6,8 @@
 |-------|-------|
 | Version | v1 |
 | Phases | 6 (Phase 1~6) |
-| Current Phase | Phase 2 완료 |
-| Status | Phase 1 완료 (UI 골격 + 10 입력 필드), Phase 2 완료 (템플릿 대본 생성 + 결과 렌더링 + PDF) |
+| Current Phase | Phase 4 Wave 1 완료 |
+| Status | Phase 1 완료, Phase 2 완료, Phase 3 완료, Phase 4 Wave 1 완료 |
 
 ## Milestone v1 Summary
 
@@ -35,21 +35,27 @@
 | app.js (Phase 2) | [검증됨] | `app.js` — 생성 버튼 연결 + 결과 렌더링 + 액션 버튼 |
 | index.html (Phase 2) | [검증됨] | `index.html` — jsPDF CDN + 스크립트 태그 추가 |
 | style.css (Phase 2) | [검증됨] | `style.css` — 대본 테이블 + 스토리보드 카드 스타일 |
+| skill-loader.js (Phase 3) | [검증됨] | `skill-loader.js` — shortform-copywriting.md fetch + 파싱 |
+| rationale-engine.js (Phase 3) | [검증됨] | `rationale-engine.js` — 당위성 근거 생성 로직 |
+| proposal-pdf.js (Phase 3) | [검증됨] | `proposal-pdf.js` — 설득형 제안서 PDF 템플릿 |
+| proposal-layout.js (Phase 3) | [검증됨] | `proposal-layout.js` — 제안서 PDF 레이아웃 시스템 |
+| problem-diagnosis-template.js (Phase 3) | [검증됨] | `problem-diagnosis-template.js` — 문제진단 섹션 템플릿 |
+| expected-effects-template.js (Phase 3) | [검증됨] | `expected-effects-template.js` — 기대효과 서술 템플릿 |
+| api/generate.js (Phase 4) | [검증됨] | `api/generate.js` — Claude API 서버리스 함수 (26원칙 시스템 프롬프트) |
+| vercel.json (Phase 4) | [검증됨] | `vercel.json` — Vercel 배포 설정 (API + 정적 파일 라우팅) |
 | RETROSPECTIVE.md | 미생성 | — |
 
 ## Next Actions
 
-1. Phase 3 구현 시작 (`/gsd-execute-phase` 실행)
-2. `skill-loader.js` (shortform-copywriting.md fetch + 파싱) 생성
-3. `rationale-engine.js` (당위성 근거 생성 로직) 생성
-4. `proposal-pdf.js` (설득형 제안서 PDF 템플릿) 생성
-5. `app.js`에 Phase 3 로직 연결
+1. Phase 4 Wave 2: `app.js`에 API 호출 로직 + 자동 모드 전환 UI 추가
+2. Phase 4 Wave 3: 통합 테스트 + 배포 검증
+3. Vercel 대시보드에서 `ANTHROPIC_API_KEY` 환경변수(Secret) 설정
 
 ## Git History
 
 ```
+667eca3 feat(4-1): add Vercel serverless API + deployment config
 dc4852d docs: initialize GSD planning for AD SCRIPT STUDIO
-(phase 2: implementation pending)
 ```
 
 ## Risk Register
@@ -70,3 +76,5 @@ dc4852d docs: initialize GSD planning for AD SCRIPT STUDIO
 | v1-refactor | 2026-07-31 | 리팩터링: 전략 제안서 중심 재정의. Phase 3 핵심 격상. R23-R27 신규. Requirements 22→27. |
 | v1-phase2-plan | 2026-07-31 | Phase 2 플랜 생성: template-plan.js, pdf.js, app.js 업데이트. Wave 1 (단일 웨이브). |
 | v1-phase2-done | 2026-07-31 | Phase 2 구현 완료: template-plan.js, pdf.js, app.js 업데이트, index.html CDN 추가, style.css UI 스타일 추가. |
+| v1-phase3-done | 2026-07-31 | Phase 3 구현 완료: skill-loader.js, rationale-engine.js, proposal-pdf.js, proposal-layout.js, problem-diagnosis-template.js, expected-effects-template.js 생성. Wave 2 템플릿 통합 완료. |
+| v1-phase4-wave1 | 2026-07-31 | Phase 4 Wave 1 완료: api/generate.js (Claude API 서버리스 함수 + 26원칙 시스템 프롬프트), vercel.json (배포 설정) 생성. |
