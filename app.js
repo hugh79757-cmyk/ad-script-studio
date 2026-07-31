@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initModeToggle();  // Phase 4: 수동/자동 모드 전환 초기화
   initPhase3();  // Phase 3: 당위성 엔진 초기화
   initToolTabs();  // Phase 5: 도구 탭 전환 초기화
+  initTabPersistence();  // Phase 6: 탭 상태 복원 (sessionStorage)
 });
 
 // 1. 입력 필드 → state 바인딩
@@ -462,6 +463,27 @@ function renderAutoResult(result) {
     rationaleDiv.innerHTML = `<h4>당위성 근거</h4>${result.rationale}`;
     strategyEl.appendChild(rationaleDiv);
   }
+  
+  // Phase 6: "2번으로 보내기" 버튼 추가 (제안서 결과 하단)
+  const transferDiv = document.createElement('div');
+  transferDiv.className = 'result-actions';
+  transferDiv.innerHTML = `
+    <button id="transferBtn" class="transfer-btn" type="button">
+      2번으로 보내기 →
+    </button>
+  `;
+  strategyEl.appendChild(transferDiv);
+  
+  // "2번으로 보내기" 버튼 바인딩
+  document.getElementById('transferBtn').addEventListener('click', () => {
+    // 현재 결과 저장
+    saveProposalResults({
+      script: result.script,
+      inputs: { ...appState }
+    });
+    // 영상 소스 생성기에 전달
+    transferToVideoGenerator();
+  });
   
   // 결과 영역 표시 + 전략 탭 활성화
   document.querySelectorAll('.result-tab').forEach(t => t.classList.remove('active'));
