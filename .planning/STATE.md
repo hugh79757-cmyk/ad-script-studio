@@ -6,8 +6,8 @@
 |-------|-------|
 | Version | v1 |
 | Phases | 6 (Phase 1~6) |
-| Current Phase | Phase 5 완료 |
-| Status | Phase 1 완료, Phase 2 완료, Phase 3 완료, Phase 4 완료, Phase 5 완료 |
+| Current Phase | Phase 6 Wave 1 완료 |
+| Status | Phase 1 완료, Phase 2 완료, Phase 3 완료, Phase 4 완료, Phase 5 완료, Phase 6 Wave 1 완료 |
 
 ## Milestone v1 Summary
 
@@ -50,6 +50,7 @@
 | phase-06/CONTEXT.md | [검증됨] | `.planning/phase-06-integration-deploy/CONTEXT.md` — Phase 6 컨텍스트 |
 | phase-06/01-state-management.PLAN.md | [검증됨] | `.planning/phase-06-integration-deploy/01-state-management.PLAN.md` — Wave 1 플랜 |
 | phase-06/02-e2e-deploy.PLAN.md | [검증됨] | `.planning/phase-06-integration-deploy/02-e2e-deploy.PLAN.md` — Wave 2 플랜 |
+| phase-06/01-state-management-SUMMARY.md | [검증됨] | `.planning/phases/06-integration-deploy/01-state-management-SUMMARY.md` — Wave 1 요약 |
 | phase-05/PLAN.md | [검증됨] | `.planning/phase-05-video-source/PLAN.md` — Phase 5 메인 플랜 |
 | phase-05/CONTEXT.md | [검증됨] | `.planning/phase-05-video-source/CONTEXT.md` — Phase 5 컨텍스트 |
 | phase-05/01-scene-parser.PLAN.md | [검증됨] | `.planning/phase-05-video-source/01-scene-parser.PLAN.md` — Wave 1 플랜 |
@@ -67,6 +68,8 @@
 ## Git History
 
 ```
+6334855 feat(06-1): add '2번으로 보내기' button + initTabPersistence to DOMContentLoaded
+d69a74f feat(06-1): add tab state management — tabState, transferToVideoGenerator, switchTab, initTabPersistence
 e262a34 feat(05-2): add tool tab switching + video generator integration
 1f0c625 docs(05-1): complete scene parser plan — SUMMARY + STATE update
 de0cc65 feat(05-1): add scene parser + video prompt generator UI
@@ -100,3 +103,4 @@ dc4852d docs: initialize GSD planning for AD SCRIPT STUDIO
 | v1-phase4-done | 2026-07-31 | Phase 4 완료: app.js API 호출 로직 + 모드 전환 UI + 로딩 스피너 추가. 수동/자동 모드 전환 동작. |
 | v1-phase5-wave1 | 2026-07-31 | Phase 5 Wave 1 완료: template-video.js (씬 파싱 + EN 프롬프트 생성), video-ui.js (영상 소스 생성기 UI) 생성. |
 | v1-phase5-done | 2026-07-31 | Phase 5 완료: app.js 탭 전환 로직 추가, index.html 탭 UI + 비디오 컨테이너 추가, style.css 탭+비디오 스타일 추가. 영상 소스 생성기 탭 전환 동작. |
+| v1-phase6-wave1 | 2026-07-31 | Phase 6 Wave 1 완료: state-manager.js 탭 상태 관리(tabState, saveProposalResults, transferToVideoGenerator, switchTab, initTabPersistence), app.js "2번으로 보내기" 버튼 추가. 제안서→영상 소스 생성기 연결 완료. |
