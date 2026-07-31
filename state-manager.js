@@ -71,3 +71,89 @@ function resetState() {
   });
   window.dispatchEvent(new CustomEvent('stateReset'));
 }
+
+// === Phase 6: 탭 간 상태 전달 ===
+
+// 탭 상태 관리
+const tabState = {
+  activeTab: 'proposal',  // 'proposal' or 'video'
+  proposalResults: null,   // 제안서 결과 저장
+  videoResults: null       // 영상 소스 결과 저장
+};
+
+// 제안서 결과 저장
+function saveProposalResults(results) {
+  tabState.proposalResults = results;
+  // sessionStorage에 저장 (탭 전환 시 상태 유지)
+  sessionStorage.setItem('proposalResults', JSON.stringify(results));
+}
+
+// 영상 소스 결과 저장
+function saveVideoResults(results) {
+  tabState.videoResults = results;
+  sessionStorage.setItem('videoResults', JSON.stringify(results));
+}
+
+// 탭 전환 시 상태 복원
+function restoreTabState() {
+  const savedProposal = sessionStorage.getItem('proposalResults');
+  const savedVideo = sessionStorage.getItem('videoResults');
+  
+  if (savedProposal) {
+    tabState.proposalResults = JSON.parse(savedProposal);
+  }
+  if (savedVideo) {
+    tabState.videoResults = JSON.parse(savedVideo);
+  }
+}
+
+// "2번으로 보내기" — 제안서 결과를 영상 소스 생성기에 전달
+function transferToVideoGenerator() {
+  if (!tabState.proposalResults) {
+    alert('전달할 제안서 결과가 없습니다. 먼저 제안서를 생성해주세요.');
+    return false;
+  }
+
+  const { script, inputs } = tabState.proposalResults;
+  
+  // 영상 소스 생성기 상태에 전달
+  updateState('videoScript', script);
+  updateState('videoInputs', inputs);
+  
+  // 탭 전환
+  switchTab('video');
+  
+  // 영상 소스 생성기 자동 실행
+  if (typeof generateVideoPrompts === 'function') {
+    generateVideoPrompts();
+  }
+  
+  return true;
+}
+
+// 탭 전환 함수
+function switchTab(tabName) {
+  tabState.activeTab = tabName;
+  
+  // UI 업데이트
+  document.querySelectorAll('.tool-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.tab === tabName);
+  });
+  
+  document.querySelectorAll('.tool-content').forEach(content => {
+    content.classList.toggle('active', content.id === `${tabName}-tool`);
+  });
+  
+  // 상태 저장
+  sessionStorage.setItem('activeTab', tabName);
+}
+
+// 초기화 시 탭 상태 복원
+function initTabPersistence() {
+  restoreTabState();
+  
+  const savedTab = sessionStorage.getItem('activeTab');
+  if (savedTab) {
+    switchTab(savedTab);
+  }
+}
