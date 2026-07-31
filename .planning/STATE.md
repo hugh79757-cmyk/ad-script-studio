@@ -6,8 +6,8 @@
 |-------|-------|
 | Version | v1 |
 | Phases | 6 (Phase 1~6) |
-| Current Phase | Phase 5 Wave 1 완료 |
-| Status | Phase 1 완료, Phase 2 완료, Phase 3 완료, Phase 4 완료, Phase 5 Wave 1 완료 |
+| Current Phase | Phase 5 완료 |
+| Status | Phase 1 완료, Phase 2 완료, Phase 3 완료, Phase 4 완료, Phase 5 완료 |
 
 ## Milestone v1 Summary
 
@@ -15,7 +15,7 @@
 - **Phases:** 6 phases — UI(확장입력), 대본(구성요소), **당위성엔진+제안서(핵심)**, API, 영상소스(내부용), 배포
 - **Requirements:** 27 total (R1-R27) — 기존 22개 + 신규 5개
 - **핵심 변경 (2026-07-31):** Phase 3을 당위성 엔진 + 설득형 제안서 중심으로 재설계. 영상 소스 생성기는 내부용으로 격하.
-- **Status:** Phase 1-4 구현 완료, Phase 5 Wave 1 완료
+- **Status:** Phase 1-5 구현 완료
 
 ## Artifact Inventory
 
@@ -61,14 +61,17 @@
 
 ## Next Actions
 
-1. Phase 5 Wave 2 구현 (`/gsd-execute-phase 5` — tab-integration)
-2. Phase 5 전체 완료 후 Phase 6 구현 (`/gsd-execute-phase 6`)
-3. Vercel 대시보드에서 `ANTHROPIC_API_KEY` 환경변수(Secret) 설정
+1. Phase 6 구현 시작 (`/gsd-execute-phase 6`)
+2. Vercel 대시보드에서 `ANTHROPIC_API_KEY` 환경변수(Secret) 설정
 
 ## Git History
 
 ```
+e262a34 feat(05-2): add tool tab switching + video generator integration
+1f0c625 docs(05-1): complete scene parser plan — SUMMARY + STATE update
 de0cc65 feat(05-1): add scene parser + video prompt generator UI
+abc99fc docs(5): Phase 5 플랜 생성 — 영상 소스 생성기 (내부용 재료 도구)
+f17440f docs(6): Phase 6 플랜 생성 — 두 도구 연결 + 통합 테스트 + 배포
 2da0bc9 feat(04-02): 프론트엔드 API 호출 + 모드 전환 UI 구현
 667eca3 feat(4-1): add Vercel serverless API + deployment config
 dc4852d docs: initialize GSD planning for AD SCRIPT STUDIO
@@ -96,3 +99,4 @@ dc4852d docs: initialize GSD planning for AD SCRIPT STUDIO
 | v1-phase4-wave1 | 2026-07-31 | Phase 4 Wave 1 완료: api/generate.js (Claude API 서버리스 함수 + 26원칙 시스템 프롬프트), vercel.json (배포 설정) 생성. |
 | v1-phase4-done | 2026-07-31 | Phase 4 완료: app.js API 호출 로직 + 모드 전환 UI + 로딩 스피너 추가. 수동/자동 모드 전환 동작. |
 | v1-phase5-wave1 | 2026-07-31 | Phase 5 Wave 1 완료: template-video.js (씬 파싱 + EN 프롬프트 생성), video-ui.js (영상 소스 생성기 UI) 생성. |
+| v1-phase5-done | 2026-07-31 | Phase 5 완료: app.js 탭 전환 로직 추가, index.html 탭 UI + 비디오 컨테이너 추가, style.css 탭+비디오 스타일 추가. 영상 소스 생성기 탭 전환 동작. |
