@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AD SCRIPT STUDIO</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-container">
+<!-- 좌측: 입력 패널 -->
+<div class="input-panel">
+<h1 style="font-size: 20px; margin-bottom: 24px; color: var(--text-primary);">전략 제안서 생성기</h1>
+<form id="inputForm">
+<!-- 기존 5개 필드 -->
+<div class="form-group">
+<label>브랜드명 <span class="required">*</span></label>
+<input type="text" id="brandName" placeholder="광고 주체 브랜드명을 입력하세요" data-field="brandName">
+<div class="form-hint">광고 주체 브랜드명을 입력하세요</div>
+<div class="field-error" data-error="brandName">브랜드명을 입력하세요</div>
+</div>
+<div class="form-group">
+<label>제품명 <span class="required">*</span></label>
+<input type="text" id="productName" placeholder="광고할 제품/서비스 이름을 입력하세요" data-field="productName">
+<div class="form-hint">광고할 제품/서비스 이름을 입력하세요</div>
+<div class="field-error" data-error="productName">제품명을 입력하세요</div>
+</div>
+<div class="form-group">
+<label>컨셉</label>
+<textarea id="concept" placeholder="제품의 핵심 컨셉이나 메시지를 입력하세요" data-field="concept"></textarea>
+<div class="form-hint">제품의 핵심 컨셉이나 메시지를 입력하세요</div>
+</div>
+<div class="form-group">
+<label>타겟 <span class="required">*</span></label>
+<input type="text" id="target" placeholder="타겟 고객층을 입력하세요 (예: 25~35세 여성, 직장인)" data-field="target">
+<div class="form-hint">타겟 고객층을 입력하세요</div>
+<div class="field-error" data-error="target">타겟을 입력하세요</div>
+</div>
+<div class="form-group">
+<label>톤앤매너</label>
+<select id="toneAndManner" data-field="toneAndManner">
+<option value="">선택하세요</option>
+<option value="진지">진지</option>
+<option value="유쾌">유쾌</option>
+<option value="감성">감성</option>
+<option value="유머">유머</option>
+<option value="시크">시크</option>
+<option value="발랄">발랄</option>
+<option value="몽환">몽환</option>
+<option value="강렬">강렬</option>
+</select>
+<div class="form-hint">광고의 분위기를 선택하세요</div>
+</div>
+<hr class="section-divider">
+<div class="section-label">당위성 근거용 원자료</div>
+<!-- 신규 5개 필드 -->
+<div class="form-group">
+<label>경쟁사명 / 차이점</label>
+<textarea id="competitorInfo" placeholder="경쟁 제품과의 차별점을 입력하면 더 설득력 있는 전략이 나옵니다" data-field="competitorInfo"></textarea>
+<div class="form-hint">경쟁 제품과의 차별점을 입력하면 더 설득력 있는 전략이 나옵니다</div>
+</div>
+<div class="form-group">
+<label>가격대</label>
+<input type="text" id="priceRange" placeholder="예: 39,000원, 첫 구매 시 할인" data-field="priceRange">
+<div class="form-hint">가격 정보가 있으면 구매 장벽 분석에 활용됩니다</div>
+</div>
+<div class="form-group">
+<label>리뷰 발췌</label>
+<textarea id="reviewExcerpts" placeholder="실제 고객이 쓴 표현을 그대로 넣으면 더 설득력 있는 카피가 나옵니다&#10;(줄바꿈으로 구분하여 여러 건 입력)" data-field="reviewExcerpts"></textarea>
+<div class="form-hint">실제 고객이 쓴 표현을 그대로 넣으면 더 설득력 있는 카피가 나옵니다 (줄바꿈으로 구분)</div>
+</div>
+<div class="form-group">
+<label>브랜드 신뢰요소</label>
+<div class="tag-input-container" id="trustFactorsTagInput">
+<input type="text" class="tag-input" placeholder="입력 후 Enter (예: 식약처 인증)">
+</div>
+<div class="form-hint">수상내역, 판매량, 인증 등 신뢰 요소를 입력하세요</div>
+</div>
+<div class="form-group">
+<label>제외키워드</label>
+<input type="text" id="excludedKeywords" placeholder="쉼표로 구분 (예: 저렴한, 싼)" data-field="excludedKeywords">
+<div class="form-hint">이 광고에서 사용하지 않을 키워드를 입력하세요</div>
+</div>
+<button type="submit" class="generate-btn">전략 제안서 생성</button>
+</form>
+</div>
+<!-- 우측: 결과 패널 -->
+<div class="result-panel">
+<div class="result-tabs">
+<button class="result-tab active" data-tab="strategy">전략 개요</button>
+<button class="result-tab" data-tab="script">대본</button>
+<button class="result-tab" data-tab="storyboard">스토리보드</button>
+</div>
+<div class="result-content active" id="strategy">
+<div class="empty-state">
+입력 필드를 작성하고 "전략 제안서 생성" 버튼을 클릭하세요
+</div>
+</div>
+<div class="result-content" id="script">
+<div class="empty-state">
+대본이 여기에 표시됩니다 (Phase 2)
+</div>
+</div>
+<div class="result-content" id="storyboard">
+<div class="empty-state">
+스토리보드가 여기에 표시됩니다 (Phase 2)
+</div>
+</div>
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<script src="state-manager.js"></script>
+<script src="template-plan.js"></script>
+<script src="pdf.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
