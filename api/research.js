@@ -12,6 +12,10 @@
  * 2. "{제품명} 가격대"
  * 3. "{제품명} 리뷰 반복되는 표현"
  * 4. "{브랜드명} 수상내역 인증 판매량"
+ * 
+ * 신뢰도 임계값:
+ * - 검색 결과에 제품명/브랜드명이 포함되지 않으면 빈 값 반환
+ * - 관련 없는 검색 결과를 억지로 채우지 않음
  */
 
 // ============================================================================
@@ -47,25 +51,67 @@ async function tavilySearch(query, apiKey) {
 }
 
 // ============================================================================
+// 관련성 검사 — 검색 결과가 실제 제품과 관련있는지 확인
+// ============================================================================
+
+/**
+ * 검색 결과가 대상 제품/브랜드와 관련있는지 확인
+ * @param {Object} tavilyResult - Tavily 검색 결과
+ * @param {string} productName - 제품명
+ * @param {string} brandName - 브랜드명
+ * @returns {boolean} 관련성 있으면 true
+ */
+function isRelevantResult(tavilyResult, productName, brandName) {
+  const answer = (tavilyResult.answer || '').toLowerCase();
+  const results = tavilyResult.results || [];
+  const allText = [
+    answer,
+    ...results.map(r => `${r.title || ''} ${r.content || ''}`)
+  ].join(' ').toLowerCase();
+  
+  // 제품명의 핵심 단어 추출 (2자 이상)
+  const productWords = (productName || '').toLowerCase()
+    .split(/[\s]+/)
+    .filter(w => w.length >= 2);
+  
+  // 브랜드명의 핵심 단어 추출 (2자 이상)
+  const brandWords = (brandName || '').toLowerCase()
+    .split(/[\s]+/)
+    .filter(w => w.length >= 2);
+  
+  const searchTerms = [...productWords, ...brandWords].filter(w => w.length > 0);
+  
+  if (searchTerms.length === 0) return true; // 검사할 대상 없으면 통과
+  
+  // 검색 결과에 검색 대상 키워드가 최소 1개 이상 포함되어야 관련성 인정
+  const hasMatch = searchTerms.some(term => allText.includes(term));
+  
+  return hasMatch;
+}
+
+// ============================================================================
 // 결과 파싱 — 검색 결과를 구조화된 데이터로 변환
 // ============================================================================
 
 /**
  * 경쟁사 정보 추출
  * @param {Object} tavilyResult - Tavily 검색 결과
- * @returns {string} 경쟁사 정보 텍스트
+ * @param {string} productName - 제품명
+ * @param {string} brandName - 브랜드명
+ * @returns {string} 경쟁사 정보 텍스트 (관련 없으면 빈 문자열)
  */
-function parseCompetitors(tavilyResult) {
+function parseCompetitors(tavilyResult, productName, brandName) {
+  // 관련성 검사
+  if (!isRelevantResult(tavilyResult, productName, brandName)) {
+    console.log('[research.js] parseCompetitors: 검색 결과가 대상과 무관 — 빈 값 반환');
+    return '';
+  }
+  
   const answer = tavilyResult.answer || '';
   const results = tavilyResult.results || [];
   
   // answer에서 경쟁사명 추출 시도
-  const allText = [answer, ...results.map(r => r.content || '')].join(' ');
-  
-  // 일반적인 경쟁사 패턴: "A, B, C" 또는 "A와 B" 등
-  // 길이가 10자 이상이면 유효한 결과로 간주
   if (answer.length > 10) {
-    // answer를 그대로 반환 (사용자가 검토)
     return answer.substring(0, 500);
   }
   
@@ -82,9 +128,17 @@ function parseCompetitors(tavilyResult) {
 /**
  * 가격대 정보 추출
  * @param {Object} tavilyResult - Tavily 검색 결과
- * @returns {string} 가격대 텍스트
+ * @param {string} productName - 제품명
+ * @param {string} brandName - 브랜드명
+ * @returns {string} 가격대 텍스트 (관련 없으면 빈 문자열)
  */
-function parsePriceRange(tavilyResult) {
+function parsePriceRange(tavilyResult, productName, brandName) {
+  // 관련성 검사
+  if (!isRelevantResult(tavilyResult, productName, brandName)) {
+    console.log('[research.js] parsePriceRange: 검색 결과가 대상과 무관 — 빈 값 반환');
+    return '';
+  }
+  
   const answer = tavilyResult.answer || '';
   const results = tavilyResult.results || [];
   const allText = [answer, ...results.map(r => r.content || '')].join(' ');
@@ -93,22 +147,28 @@ function parsePriceRange(tavilyResult) {
   const pricePatterns = allText.match(/[\d,]+원|[\d]+만원|\$[\d,]+|₩[\d,]+/g) || [];
   
   if (pricePatterns.length > 0) {
-    // 중복 제거 후 상위 3개
     const unique = [...new Set(pricePatterns)].slice(0, 3);
     return `검색된 가격 정보: ${unique.join(', ')}` + 
            (answer ? `\n${answer.substring(0, 300)}` : '');
   }
   
-  // 가격 패턴 없으면 answer 반환
   return answer.substring(0, 500) || '';
 }
 
 /**
  * 리뷰 표현 추출
  * @param {Object} tavilyResult - Tavily 검색 결과
- * @returns {string[]} 리뷰 발췌 배열
+ * @param {string} productName - 제품명
+ * @param {string} brandName - 브랜드명
+ * @returns {string[]} 리뷰 발췌 배열 (관련 없으면 빈 배열)
  */
-function parseReviews(tavilyResult) {
+function parseReviews(tavilyResult, productName, brandName) {
+  // 관련성 검사
+  if (!isRelevantResult(tavilyResult, productName, brandName)) {
+    console.log('[research.js] parseReviews: 검색 결과가 대상과 무관 — 빈 값 반환');
+    return [];
+  }
+  
   const answer = tavilyResult.answer || '';
   const results = tavilyResult.results || [];
   const allText = [answer, ...results.map(r => r.content || '')].join(' ');
@@ -127,7 +187,6 @@ function parseReviews(tavilyResult) {
   // 따옴표가 없으면 문장 단위로 분리하여 유용한 표현 추출
   if (reviews.length === 0) {
     const sentences = allText.split(/[.!?\n]+/).filter(s => s.trim().length > 10);
-    // 리뷰/평가 키워드가 포함된 문장优先
     const reviewKeywords = ['좋아요', '최고', '추천', '만족', '사용', '느낌', '후기', '평', '리뷰'];
     const reviewSentences = sentences.filter(s => 
       reviewKeywords.some(kw => s.includes(kw))
@@ -137,15 +196,23 @@ function parseReviews(tavilyResult) {
     });
   }
   
-  return reviews.slice(0, 5); // 최대 5개
+  return reviews.slice(0, 5);
 }
 
 /**
  * 브랜드 신뢰요소 추출
  * @param {Object} tavilyResult - Tavily 검색 결과
- * @returns {string[]} 신뢰요소 배열
+ * @param {string} productName - 제품명
+ * @param {string} brandName - 브랜드명
+ * @returns {string[]} 신뢰요소 배열 (관련 없으면 빈 배열)
  */
-function parseTrustFactors(tavilyResult) {
+function parseTrustFactors(tavilyResult, productName, brandName) {
+  // 관련성 검사 — 브랜드명 기준
+  if (!isRelevantResult(tavilyResult, productName, brandName)) {
+    console.log('[research.js] parseTrustFactors: 검색 결과가 대상과 무관 — 빈 값 반환');
+    return [];
+  }
+  
   const answer = tavilyResult.answer || '';
   const results = tavilyResult.results || [];
   const allText = [answer, ...results.map(r => r.content || '')].join(' ');
@@ -162,7 +229,7 @@ function parseTrustFactors(tavilyResult) {
     /식약처[^.]{0,30}/g,
     /ISO[^.]{0,30}/g,
     /특허[^.]{0,30}/g,
-    /推荐|추천[^.]{0,30}/g
+    /추천[^.]{0,30}/g
   ];
   
   trustPatterns.forEach(pattern => {
@@ -175,7 +242,7 @@ function parseTrustFactors(tavilyResult) {
     });
   });
   
-  //answer에서 신뢰 요소 추출
+  // answer에서 신뢰 요소 추출
   if (factors.length === 0 && answer.length > 5) {
     const sentences = answer.split(/[.!?\n]+/);
     sentences.forEach(s => {
@@ -186,7 +253,7 @@ function parseTrustFactors(tavilyResult) {
     });
   }
   
-  return [...new Set(factors)].slice(0, 5); // 최대 5개, 중복 제거
+  return [...new Set(factors)].slice(0, 5);
 }
 
 // ============================================================================
@@ -237,16 +304,22 @@ export default async function handler(req, res) {
     
     const results = {};
     const errors = [];
+    const relevanceLog = [];
     
     for (const q of queries) {
       try {
         const tavilyResult = await tavilySearch(q.query, apiKey);
-        results[q.key] = q.parser(tavilyResult);
+        const relevant = isRelevantResult(tavilyResult, productName, brandName);
+        relevanceLog.push({ query: q.query, relevant });
+        
+        // 파서에 productName, brandName 전달하여 관련성 검사 포함
+        results[q.key] = q.parser(tavilyResult, productName, brandName);
       } catch (err) {
         console.error(`[research.js] "${q.query}" 검색 실패:`, err.message);
         errors.push({ query: q.query, error: err.message });
         // 실패 시 빈 값
-        results[q.key] = Array.isArray(q.parser([])) ? [] : '';
+        const emptyVal = q.key === 'reviews' || q.key === 'trustFactors' ? [] : '';
+        results[q.key] = emptyVal;
       }
     }
     
@@ -254,6 +327,7 @@ export default async function handler(req, res) {
       success: true,
       data: results,
       errors: errors.length > 0 ? errors : undefined,
+      relevance: relevanceLog,
       source: 'tavily'
     });
     

@@ -6,6 +6,24 @@
 |--------|------|-----------|-----------|
 | ANTHROPIC_API_KEY | Claude API 키 (자동 모드) | Vercel 대시보드 → Settings → Environment Variables | 자동 모드 사용 시 필수 |
 | TAVILY_API_KEY | Tavily Search API 키 (자동 조사) | Vercel 대시보드 → Settings → Environment Variables | 자동 조사 기능 사용 시 필수 |
+| KV_REST_API_URL | Vercel KV REST API URL | Vercel 대시보드 → Storage → KV → Settings | 기획안 검토 기능 사용 시 필수 |
+| KV_REST_API_TOKEN | Vercel KV REST API 토큰 | Vercel 대시보드 → Storage → KV → Settings | 기획안 검토 기능 사용 시 필수 |
+
+## Vercel KV 설정 방법
+
+1. Vercel 대시보드 접속
+2. 프로젝트 선택
+3. Storage 탭 → "Create Database" → "KV" 선택
+4. 프로젝트에 연결 (Connect)
+5. 환경변수가 자동으로 설정됨:
+   - `KV_REST_API_URL`
+   - `KV_REST_API_TOKEN`
+6. 로컬 개발 시: `vercel env pull .env.local`
+
+### KV 무료 플랜
+- 월 30,000 요청 무료
+- 256MB 저장 공간
+- 기획안 검토는 1건당 1~3 요청 사용
 
 ## 설정 방법
 
@@ -15,6 +33,7 @@
 4. 변수 추가:
    - `ANTHROPIC_API_KEY`: Claude API 키
    - `TAVILY_API_KEY`: Tavily Search API 키
+   - `KV_REST_API_URL` / `KV_REST_API_TOKEN`: Storage 연결 시 자동 설정
 5. Production, Preview, Development 모두 선택
 6. Save
 
@@ -43,10 +62,20 @@ curl https://your-app.vercel.app/api/research \
   -H "Content-Type: application/json" \
   -d '{"brandName": "삼성", "productName": "갤럭시버즈"}'
 
-# 기획안 검토 페이지 테스트
-# 1. 먼저 기획안 생성
-# 2. /api/review로 POST하여 리뷰 ID 생성
-# 3. /review/{ID}로 접속하여 검토 페이지 확인
+# 기획안 검토 생성 테스트
+curl https://your-app.vercel.app/api/review \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"brandName": "테스트", "productName": "제품"}'
+
+# 기획안 검토 조회 (위 응답에서 받은 id 사용)
+curl https://your-app.vercel.app/api/review?id=받은id
+
+# 기획안 검토 상태 업데이트
+curl https://your-app.vercel.app/api/review \
+  -X PATCH \
+  -H "Content-Type: application/json" \
+  -d '{"id": "받은id", "status": "approved"}'
 ```
 
 ## API 엔드포인트
@@ -62,6 +91,11 @@ curl https://your-app.vercel.app/api/research \
 
 ## 문제 해결
 
+### KV_REST_API_URL 오류
+- Vercel 대시보드 → Storage → 해당 KV 저장소 → Settings에서 URL 확인
+- `vercel env pull .env.local`로 로컬 환경변수 동기화
+- KV 저장소가 프로젝트에 연결되었는지 확인 (Settings → Integrations)
+
 ### ANTHROPIC_API_KEY 오류
 - 환경변수가 제대로 설정되었는지 확인
 - Vercel 대시보드에서 Environment Variables 탭 확인
@@ -76,6 +110,11 @@ curl https://your-app.vercel.app/api/research \
 - 검색 대상 제품/브랜드명이 너무 구체적이거나 신제품일 수 있음
 - Tavily API 일시적 장애 가능 → 재시도
 - 빈 결과는 정상 — 그라운딩 규칙에 따라 관련 원칙이 자동 스킵됨
+
+### 기획안 검토 링크가 작동하지 않음
+- `/review/{id}` 형식인지 확인 (id는 22자 랜덤 문자열)
+- KV 저장소에 해당 ID가 존재하는지 확인
+- 클라이언트 검토 페이지(client-review.html)가 정상 로드되는지 확인
 
 ### 빌드 실패
 - `vercel.json` 설정 확인

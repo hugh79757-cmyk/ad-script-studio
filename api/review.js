@@ -1,40 +1,26 @@
 /**
  * @file api/review.js
- * @description Vercel serverless function — 기획안 검토 CRUD
+ * @description Vercel serverless function — 기획안 검토 CRUD (Vercel KV 저장소)
  * 
  * GET    /api/review?id=xxx        — 리뷰 데이터 조회
  * POST   /api/review               — 새 리뷰 생성
  * PATCH  /api/review               — 승인/수정요청 상태 업데이트
  * 
- * 저장소: JSON 파일 기반 (/tmp/reviews/)
- * 참고: /tmp는 서버리스 함수 인스턴스 간 공유되지 않으므로,
- *       프로덕션에서는 Vercel KV 또는 외부 DB 사용 권장.
- *       현재 구현은 단일 인스턴스 테스트 용도.
+ * 저장소: Vercel KV (Upstash Redis 기반)
+ * 키 형식: review:{project-id}
+ * project-id: crypto.randomBytes로 생성 (22자, 128bit 엔트로피, 추측 불가)
  */
 
-import { readdir, readFile, writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { existsSync } from 'fs';
+import { kv } from '@vercel/kv';
+import { randomBytes } from 'crypto';
 
-const REVIEWS_DIR = '/tmp/reviews';
+const KV_PREFIX = 'review:';
 
-// 디렉토리 초기화
-async function ensureDir() {
-  if (!existsSync(REVIEWS_DIR)) {
-    await mkdir(REVIEWS_DIR, { recursive: true });
-  }
-}
-
-// JSON 파일 경로
-function getFilePath(id) {
-  // ID에서 안전한 파일명 생성
-  const safeId = id.replace(/[^a-zA-Z0-9_-]/g, '_');
-  return join(REVIEWS_DIR, `${safeId}.json`);
-}
-
-// ID 생성
+// 추측 불가능한 랜덤 ID 생성 (base64url, 22자)
 function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
+  // 16 bytes = 128 bits → base64url 인코딩 시 22자
+  // 문자셋: A-Z, a-z, 0-9, -, _ (URL 안전)
+  return randomBytes(16).toString('base64url');
 }
 
 export default async function handler(req, res) {
@@ -48,8 +34,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    await ensureDir();
-
     // ── GET: 리뷰 조회 ──
     if (req.method === 'GET') {
       const { id } = req.query;
@@ -57,13 +41,14 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'id 파라미터가 필요합니다.' });
       }
 
-      const filePath = getFilePath(id);
-      if (!existsSync(filePath)) {
+      const key = `${KV_PREFIX}${id}`;
+      const data = await kv.get(key);
+      
+      if (!data) {
         return res.status(404).json({ error: '해당 기획안을 찾을 수 없습니다.' });
       }
-
-      const data = await readFile(filePath, 'utf-8');
-      return res.status(200).json(JSON.parse(data));
+      
+      return res.status(200).json(data);
     }
 
     // ── POST: 새 리뷰 생성 ──
@@ -84,8 +69,8 @@ export default async function handler(req, res) {
         reviewedAt: null
       };
 
-      const filePath = getFilePath(id);
-      await writeFile(filePath, JSON.stringify(reviewData, null, 2), 'utf-8');
+      const key = `${KV_PREFIX}${id}`;
+      await kv.set(key, reviewData);
       
       return res.status(201).json({ 
         success: true, 
@@ -102,13 +87,13 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'id가 필요합니다.' });
       }
 
-      const filePath = getFilePath(id);
-      if (!existsSync(filePath)) {
+      const key = `${KV_PREFIX}${id}`;
+      const existing = await kv.get(key);
+      
+      if (!existing) {
         return res.status(404).json({ error: '해당 기획안을 찾을 수 없습니다.' });
       }
 
-      const existing = JSON.parse(await readFile(filePath, 'utf-8'));
-      
       const updated = {
         ...existing,
         status: status || existing.status,
@@ -116,7 +101,7 @@ export default async function handler(req, res) {
         reviewedAt: reviewedAt || existing.reviewedAt
       };
 
-      await writeFile(filePath, JSON.stringify(updated, null, 2), 'utf-8');
+      await kv.set(key, updated);
       
       return res.status(200).json({ 
         success: true, 

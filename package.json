@@ -7,7 +7,11 @@
     "build": "echo 'Static site - no build needed'",
     "deploy": "vercel --prod",
     "deploy:preview": "vercel",
-    "test:e2e": "open index.html && echo 'Run E2E_TEST.runAll() in browser console'"
+    "test:e2e": "open index.html && echo 'Run E2E_TEST.runAll() in browser console'",
+    "test:review": "echo '1. vercel dev 2. POST /api/review 3. GET /api/review?id=xxx 4. PATCH /api/review'"
+  },
+  "dependencies": {
+    "@vercel/kv": "^3.0.0"
   },
   "devDependencies": {
     "vercel": "latest"
