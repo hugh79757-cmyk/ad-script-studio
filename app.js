@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initTagInput();
   initTabSwitching();
   initScriptGeneration();
+  initModeToggle();  // Phase 4: 수동/자동 모드 전환 초기화
+  initPhase3();  // Phase 3: 당위성 엔진 초기화
 });
 
 // 1. 입력 필드 → state 바인딩
@@ -80,27 +82,6 @@ function initTabSwitching() {
       tab.classList.add('active');
       document.getElementById(tab.dataset.tab).classList.add('active');
     });
-  });
-}
-
-// 4. 스크립트 생성 핸들러
-function initScriptGeneration() {
-  const form = document.getElementById('inputForm');
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const errors = validateRequired();
-    // 모든 경고 초기화
-    document.querySelectorAll('.field-error').forEach(el => el.classList.remove('visible'));
-    // 에러 표시
-    errors.forEach(err => {
-      const errorEl = document.querySelector(`.field-error[data-error="${err.field}"]`);
-      if (errorEl) errorEl.classList.add('visible');
-    });
-    if (errors.length === 0) {
-      const scenes = generateScript(appState);
-      renderScriptResult(scenes);
-      renderStoryboardResult(scenes);
-    }
   });
 }
 
@@ -228,4 +209,243 @@ function resetUI() {
   renderTags(document.getElementById('trustFactorsTagInput'), 'trustFactors');
   document.getElementById('script').innerHTML = '<p class="empty-message">생성된 대본이 여기에 표시됩니다.</p>';
   document.getElementById('storyboard').innerHTML = '<p class="empty-message">스토리보드가 여기에 표시됩니다.</p>';
+  document.getElementById('strategy').innerHTML = '<p class="empty-message">입력 필드를 작성하고 "전략 제안서 생성" 버튼을 클릭하세요</p>';
+}
+
+// === Phase 3: 당위성 엔진 + 설득형 제안서 ===
+
+// 10. Phase 3 초기화
+function initPhase3() {
+  // 스킬 파일 로드
+  loadSkillFile().then(principles => {
+    window.appPrinciples = principles;
+    console.log(`[Phase 3] ${principles.length}개 원칙 로드 완료`);
+  }).catch(error => {
+    console.error('[Phase 3] 스킬 파일 로드 실패:', error);
+    window.appPrinciples = [];
+  });
+  
+  // 당위성 근거 생성 버튼 이벤트 (전략 개요 탭에 추가)
+  const strategyTab = document.getElementById('strategy');
+  if (strategyTab) {
+    // 당위성 근거 생성 버튼 추가
+    const rationaleBtn = document.createElement('button');
+    rationaleBtn.id = 'generateRationaleBtn';
+    rationaleBtn.className = 'action-btn rationale-btn';
+    rationaleBtn.type = 'button';
+    rationaleBtn.textContent = '당위성 근거 생성';
+    rationaleBtn.style.marginTop = '10px';
+    rationaleBtn.style.marginRight = '10px';
+    
+    // 제안서 PDF 다운로드 버튼 추가
+    const proposalPdfBtn = document.createElement('button');
+    proposalPdfBtn.id = 'proposalPdfBtn';
+    proposalPdfBtn.className = 'action-btn proposal-pdf-btn';
+    proposalPdfBtn.type = 'button';
+    proposalPdfBtn.textContent = '제안서 PDF 다운로드';
+    proposalPdfBtn.style.marginTop = '10px';
+    
+    // 버튼 컨테이너 생성
+    const btnContainer = document.createElement('div');
+    btnContainer.className = 'phase3-buttons';
+    btnContainer.appendChild(rationaleBtn);
+    btnContainer.appendChild(proposalPdfBtn);
+    
+    // 기존 내용 앞에 버튼 추가
+    strategyTab.insertBefore(btnContainer, strategyTab.firstChild);
+    
+    // 당위성 근거 생성 버튼 이벤트
+    rationaleBtn.addEventListener('click', () => {
+      const principles = window.appPrinciples || [];
+      if (principles.length === 0) {
+        alert('원칙이 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
+        return;
+      }
+      const rationale = generateRationaleManually(appState, principles);
+      renderRationaleCards(rationale);
+      window.appRationale = rationale;
+    });
+    
+    // 제안서 PDF 다운로드 버튼 이벤트
+    proposalPdfBtn.addEventListener('click', () => {
+      if (!window.appRationale) {
+        alert('먼저 당위성 근거를 생성해주세요.');
+        return;
+      }
+      if (!window.appScenes || window.appScenes.length === 0) {
+        alert('먼저 대본을 생성해주세요.');
+        return;
+      }
+      downloadProposalPDF(
+        {},  // 추가 데이터
+        appState,
+        window.appScenes,
+        window.appRationale,
+        window.appPrinciples || []
+      );
+    });
+  }
+  
+  // 수동↔자동 모드 전환 — initModeToggle()에서 처리 (Phase 4)
+}
+
+// 11. 스크립트 생성 시 씬 데이터 저장 + 당위성 근거 자동 생성
+function initScriptGeneration() {
+  const form = document.getElementById('inputForm');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errors = validateRequired();
+    // 모든 경고 초기화
+    document.querySelectorAll('.field-error').forEach(el => el.classList.remove('visible'));
+    // 에러 표시
+    errors.forEach(err => {
+      const errorEl = document.querySelector(`.field-error[data-error="${err.field}"]`);
+      if (errorEl) errorEl.classList.add('visible');
+    });
+    if (errors.length === 0) {
+      if (appState.mode === 'auto') {
+        // 자동 모드: Claude API 호출
+        await callGenerateAPI();
+      } else {
+        // 수동 모드: 템플릿 기반 생성
+        const scenes = generateScript(appState);
+        window.appScenes = scenes;  // Phase 3에서 사용하기 위해 저장
+        renderScriptResult(scenes);
+        renderStoryboardResult(scenes);
+        
+        // Phase 3: 당위성 근거 자동 생성 (수동 모드)
+        const principles = window.appPrinciples || [];
+        if (principles.length > 0) {
+          const rationale = generateRationaleManually(appState, principles);
+          renderRationaleCards(rationale);
+          window.appRationale = rationale;
+        }
+      }
+    }
+  });
+}
+
+// === Phase 4: Claude API 자동화 + 모드 전환 ===
+
+// 12. 모드 전환 초기화
+function initModeToggle() {
+  const toggle = document.getElementById('modeToggle');
+  const modeLabel = document.getElementById('modeLabel');
+  
+  if (!toggle) return;
+  
+  toggle.addEventListener('change', (e) => {
+    const mode = e.target.checked ? 'auto' : 'manual';
+    appState.mode = mode;
+    
+    // UI 업데이트
+    modeLabel.textContent = mode === 'auto' ? '자동 모드' : '수동 모드';
+    updateUIForMode(mode);
+  });
+}
+
+// 13. 모드별 UI 업데이트
+function updateUIForMode(mode) {
+  const generateBtn = document.querySelector('.generate-btn');
+  
+  if (mode === 'auto') {
+    generateBtn.textContent = '자동 생성';
+  } else {
+    generateBtn.textContent = '전략 제안서 생성';
+  }
+}
+
+// 14. Claude API 호출
+async function callGenerateAPI() {
+  const spinner = document.getElementById('loadingSpinner');
+  const generateBtn = document.querySelector('.generate-btn');
+  
+  try {
+    // 로딩 시작
+    spinner.classList.add('active');
+    generateBtn.disabled = true;
+    generateBtn.textContent = '생성 중...';
+
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        inputs: appState,
+        mode: 'auto'
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    // 결과 렌더링
+    renderAutoResult(result);
+    
+  } catch (error) {
+    console.error('Generation failed:', error);
+    showError('생성에 실패했습니다. 다시 시도해주세요.');
+  } finally {
+    // 로딩 종료
+    spinner.classList.remove('active');
+    generateBtn.disabled = false;
+    generateBtn.textContent = '자동 생성';
+  }
+}
+
+// 15. 자동 모드 결과 렌더링
+function renderAutoResult(result) {
+  // 전략 개요 렌더링
+  const strategyEl = document.getElementById('strategy');
+  if (result.strategy) {
+    strategyEl.innerHTML = `<div class="auto-result">${result.strategy}</div>`;
+  }
+  
+  // 대본 렌더링
+  const scriptEl = document.getElementById('script');
+  if (result.script) {
+    scriptEl.innerHTML = `
+      <div class="result-header">
+        <h3>생성된 대본</h3>
+        <div class="action-buttons">
+          <button class="copyBtn" type="button">복사</button>
+        </div>
+      </div>
+      <div class="auto-script-content">${result.script}</div>
+    `;
+    // 복사 버튼 바인딩
+    const copyBtn = scriptEl.querySelector('.copyBtn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(result.script);
+          copyBtn.textContent = '복사됨!';
+          setTimeout(() => { copyBtn.textContent = '복사'; }, 2000);
+        } catch (err) {
+          console.error('클립보드 복사 실패', err);
+        }
+      });
+    }
+  }
+  
+  // 당위성 근거 렌더링 (전략 탭에 추가)
+  if (result.rationale) {
+    const rationaleDiv = document.createElement('div');
+    rationaleDiv.className = 'auto-rationale';
+    rationaleDiv.innerHTML = `<h4>당위성 근거</h4>${result.rationale}`;
+    strategyEl.appendChild(rationaleDiv);
+  }
+  
+  // 결과 영역 표시 + 전략 탭 활성화
+  document.querySelectorAll('.result-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.result-content').forEach(c => c.classList.remove('active'));
+  document.querySelector('[data-tab="strategy"]').classList.add('active');
+  strategyEl.classList.add('active');
+}
+
+// 16. 에러 표시
+function showError(message) {
+  alert(message);
 }

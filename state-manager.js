@@ -12,7 +12,9 @@ const appState = {
   priceRange: '',
   reviewExcerpts: [], // 줄바꿈으로 구분 → 배열
   trustFactors: [], // 태그 입력 → 배열
-  excludedKeywords: [] // 쉼표 구분 → 배열
+  excludedKeywords: [], // 쉼표 구분 → 배열
+  // Phase 4: 모드 상태
+  mode: 'manual'  // 'manual' or 'auto'
 };
 
 // 상태 업데이트 함수
@@ -59,7 +61,9 @@ function validateRequired() {
 // 초기화
 function resetState() {
   Object.keys(appState).forEach(key => {
-    if (Array.isArray(appState[key])) {
+    if (key === 'mode') {
+      appState[key] = 'manual';  // 모드는 수동으로 리셋
+    } else if (Array.isArray(appState[key])) {
       appState[key] = [];
     } else {
       appState[key] = '';
