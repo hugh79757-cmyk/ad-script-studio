@@ -557,3 +557,193 @@ input:checked + .toggle-slider:before {
   color: var(--text-secondary);
   margin-bottom: 12px;
 }
+
+/* === Phase 5: 도구 탭 전환 + 영상 소스 생성기 === */
+
+.tools-container {
+  margin-top: 20px;
+}
+
+.tool-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #333;
+  margin-bottom: 20px;
+}
+
+.tool-tab {
+  padding: 12px 24px;
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.tool-tab:hover {
+  color: #fff;
+}
+
+.tool-tab.active {
+  color: #4ade80;
+  border-bottom: 2px solid #4ade80;
+  margin-bottom: -2px;
+}
+
+.tool-content {
+  display: none;
+}
+
+.tool-content.active {
+  display: block;
+}
+
+/* 영상 소스 생성기 스타일 */
+.video-input-section {
+  margin-bottom: 20px;
+}
+
+.video-input-section h3 {
+  margin-bottom: 12px;
+  color: #e0e0e0;
+}
+
+#videoScriptInput {
+  width: 100%;
+  padding: 12px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-family: monospace;
+  resize: vertical;
+}
+
+.detail-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.detail-selector label {
+  color: #888;
+}
+
+.detail-btn {
+  padding: 8px 16px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.detail-btn:hover {
+  border-color: #4ade80;
+  color: #fff;
+}
+
+.detail-btn.active {
+  background: #4ade80;
+  border-color: #4ade80;
+  color: #000;
+}
+
+.generate-video-btn {
+  width: 100%;
+  padding: 12px;
+  background: #4ade80;
+  border: none;
+  border-radius: 8px;
+  color: #000;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.generate-video-btn:hover {
+  background: #22c55e;
+}
+
+/* 프롬프트 결과 스타일 */
+.video-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.copy-all-btn {
+  padding: 8px 16px;
+  background: #333;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.copy-all-btn:hover {
+  background: #444;
+}
+
+.video-prompts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.video-prompt-card {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.prompt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.prompt-time {
+  font-weight: bold;
+  color: #4ade80;
+}
+
+.copy-prompt-btn {
+  padding: 6px 12px;
+  background: #333;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.copy-prompt-btn:hover {
+  background: #444;
+}
+
+.prompt-section {
+  margin-bottom: 8px;
+}
+
+.prompt-section label {
+  display: block;
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.prompt-text {
+  font-family: monospace;
+  font-size: 13px;
+  color: #e0e0e0;
+  background: #0a0a0a;
+  padding: 8px;
+  border-radius: 4px;
+}

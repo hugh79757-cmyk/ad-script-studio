@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initScriptGeneration();
   initModeToggle();  // Phase 4: 수동/자동 모드 전환 초기화
   initPhase3();  // Phase 3: 당위성 엔진 초기화
+  initToolTabs();  // Phase 5: 도구 탭 전환 초기화
 });
 
 // 1. 입력 필드 → state 바인딩
@@ -81,6 +82,30 @@ function initTabSwitching() {
       document.querySelectorAll('.result-content').forEach(c => c.classList.remove('active'));
       tab.classList.add('active');
       document.getElementById(tab.dataset.tab).classList.add('active');
+    });
+  });
+}
+
+// 3b. 도구 탭 전환 (전략 제안서 / 영상 소스)
+function initToolTabs() {
+  document.querySelectorAll('.tool-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const tabName = tab.dataset.tab;
+
+      // 탭 활성화
+      document.querySelectorAll('.tool-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      // 컨텐츠 전환
+      document.querySelectorAll('.tool-content').forEach(content => {
+        content.classList.toggle('active', content.id === `${tabName}-tool`);
+      });
+
+      // 영상 소스 생성기 초기화 (최초 1회)
+      if (tabName === 'video' && !tab.dataset.initialized) {
+        initVideoUI();
+        tab.dataset.initialized = 'true';
+      }
     });
   });
 }

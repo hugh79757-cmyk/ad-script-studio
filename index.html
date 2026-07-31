@@ -101,27 +101,52 @@
 <button type="submit" class="generate-btn">전략 제안서 생성</button>
 </form>
 </div>
-<!-- 우측: 결과 패널 -->
-<div class="result-panel">
-<div class="result-tabs">
-<button class="result-tab active" data-tab="strategy">전략 개요</button>
-<button class="result-tab" data-tab="script">대본</button>
-<button class="result-tab" data-tab="storyboard">스토리보드</button>
+<!-- 우측: 도구 컨테이너 -->
+<div class="tools-container">
+<!-- 탭 네비게이션 -->
+<div class="tool-tabs">
+  <button class="tool-tab active" data-tab="proposal">
+    전략 제안서 생성기
+  </button>
+  <button class="tool-tab" data-tab="video">
+    영상 소스 생성기
+  </button>
 </div>
-<div class="result-content active" id="strategy">
-<div class="empty-state">
-입력 필드를 작성하고 "전략 제안서 생성" 버튼을 클릭하세요
-</div>
-</div>
-<div class="result-content" id="script">
-<div class="empty-state">
-대본이 여기에 표시됩니다 (Phase 2)
-</div>
-</div>
-<div class="result-content" id="storyboard">
-<div class="empty-state">
-스토리보드가 여기에 표시됩니다 (Phase 2)
-</div>
+
+<!-- 도구 컨텐츠 -->
+<div class="tool-contents">
+  <!-- 전략 제안서 생성기 -->
+  <div id="proposal-tool" class="tool-content active">
+    <div class="result-panel">
+      <div class="result-tabs">
+        <button class="result-tab active" data-tab="strategy">전략 개요</button>
+        <button class="result-tab" data-tab="script">대본</button>
+        <button class="result-tab" data-tab="storyboard">스토리보드</button>
+      </div>
+      <div class="result-content active" id="strategy">
+        <div class="empty-state">
+          입력 필드를 작성하고 "전략 제안서 생성" 버튼을 클릭하세요
+        </div>
+      </div>
+      <div class="result-content" id="script">
+        <div class="empty-state">
+          대본이 여기에 표시됩니다 (Phase 2)
+        </div>
+      </div>
+      <div class="result-content" id="storyboard">
+        <div class="empty-state">
+          스토리보드가 여기에 표시됩니다 (Phase 2)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 영상 소스 생성기 -->
+  <div id="video-tool" class="tool-content">
+    <div id="videoGeneratorUI">
+      <!-- video-ui.js에서 렌더링 -->
+    </div>
+  </div>
 </div>
 </div>
 </div>
@@ -135,6 +160,8 @@
 <script src="problem-diagnosis-template.js"></script>
 <script src="expected-effects-template.js"></script>
 <script src="proposal-pdf.js"></script>
+<script src="template-video.js"></script>
+<script src="video-ui.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
