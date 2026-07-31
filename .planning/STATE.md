@@ -6,8 +6,8 @@
 |-------|-------|
 | Version | v1 |
 | Phases | 6 (Phase 1~6) |
-| Current Phase | Phase 4 Wave 1 완료 |
-| Status | Phase 1 완료, Phase 2 완료, Phase 3 완료, Phase 4 Wave 1 완료 |
+| Current Phase | Phase 4 완료 |
+| Status | Phase 1 완료, Phase 2 완료, Phase 3 완료, Phase 4 완료 |
 
 ## Milestone v1 Summary
 
@@ -43,17 +43,21 @@
 | expected-effects-template.js (Phase 3) | [검증됨] | `expected-effects-template.js` — 기대효과 서술 템플릿 |
 | api/generate.js (Phase 4) | [검증됨] | `api/generate.js` — Claude API 서버리스 함수 (26원칙 시스템 프롬프트) |
 | vercel.json (Phase 4) | [검증됨] | `vercel.json` — Vercel 배포 설정 (API + 정적 파일 라우팅) |
+| app.js (Phase 4 업데이트) | [검증됨] | `app.js` — API 호출 로직 + 모드 전환 UI + 로딩 스피너 |
+| index.html (Phase 4 업데이트) | [검증됨] | `index.html` — 모드 전환 토글 + 로딩 스피너 HTML |
+| style.css (Phase 4 업데이트) | [검증됨] | `style.css` — 토글 스위치 + 로딩 스피너 스타일 |
 | RETROSPECTIVE.md | 미생성 | — |
 
 ## Next Actions
 
-1. Phase 4 Wave 2: `app.js`에 API 호출 로직 + 자동 모드 전환 UI 추가
-2. Phase 4 Wave 3: 통합 테스트 + 배포 검증
-3. Vercel 대시보드에서 `ANTHROPIC_API_KEY` 환경변수(Secret) 설정
+1. Phase 5 구현 시작 (`/gsd-execute-phase 5`)
+2. Vercel 대시보드에서 `ANTHROPIC_API_KEY` 환경변수(Secret) 설정
+3. 자동 모드 E2E 테스트 (API 호출 → 결과 표시)
 
 ## Git History
 
 ```
+2da0bc9 feat(04-02): 프론트엔드 API 호출 + 모드 전환 UI 구현
 667eca3 feat(4-1): add Vercel serverless API + deployment config
 dc4852d docs: initialize GSD planning for AD SCRIPT STUDIO
 ```
@@ -78,3 +82,4 @@ dc4852d docs: initialize GSD planning for AD SCRIPT STUDIO
 | v1-phase2-done | 2026-07-31 | Phase 2 구현 완료: template-plan.js, pdf.js, app.js 업데이트, index.html CDN 추가, style.css UI 스타일 추가. |
 | v1-phase3-done | 2026-07-31 | Phase 3 구현 완료: skill-loader.js, rationale-engine.js, proposal-pdf.js, proposal-layout.js, problem-diagnosis-template.js, expected-effects-template.js 생성. Wave 2 템플릿 통합 완료. |
 | v1-phase4-wave1 | 2026-07-31 | Phase 4 Wave 1 완료: api/generate.js (Claude API 서버리스 함수 + 26원칙 시스템 프롬프트), vercel.json (배포 설정) 생성. |
+| v1-phase4-done | 2026-07-31 | Phase 4 완료: app.js API 호출 로직 + 모드 전환 UI + 로딩 스피너 추가. 수동/자동 모드 전환 동작. |
