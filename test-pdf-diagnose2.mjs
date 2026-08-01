@@ -151,11 +151,11 @@ const DOWNLOAD_TIMEOUT = 60000; // 60초
       });
     }
 
-    // ---- 5. 폰트 CDN 단독 점검 (페이지 내에서 직접 fetch) ----
-    console.log('\n=== 폰트 CDN 단독 fetch 점검 ===');
+    // ---- 5. 폰트/jsPDF 단독 점검 (페이지 내에서 직접 fetch) ----
+    console.log('\n=== 폰트/jsPDF 단독 fetch 점검 ===');
     const fontCheck = await page.evaluate(async () => {
       const urls = [
-        'https://raw.githubusercontent.com/google/fonts/main/ofl/notosanskr/NotoSansKR%5Bwght%5D.ttf',
+        'fonts/NotoSansKR-subset.ttf', // 로컬 서브셋 (같은 오리진)
         'https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js',
         'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js',
       ];

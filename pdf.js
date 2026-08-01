@@ -3,9 +3,13 @@
  * @description jsPDF wrapper for client-side PDF generation with Korean font support.
  */
 
-// 한글 폰트 base64 캐시 — 매 PDF 생성마다 10MB 폰트를 재다운로드하지 않도록 1회만 fetch
+// 한글 폰트 base64 캐시 — 매 PDF 생성마다 재로드하지 않도록 1회만 fetch
 let _koreanFontBase64Cache = null;
 let _koreanFontFetchPromise = null;
+
+// 로컬 폰트 파일 fetch 타임아웃 (ms) — CDN이 아닌 같은 오리진 파일이므로
+// 보통 즉시 로드되지만, 극단적 네트워크/디스크 지연 시 무한 대기 방지용
+const KOREAN_FONT_FETCH_TIMEOUT_MS = 10000;
 
 /**
  * Checks whether jsPDF is loaded on window.
@@ -16,46 +20,61 @@ function checkJsPdfLoaded() {
 }
 
 /**
- * 한글(NotoSansKR) 폰트를 CDN에서 fetch하여 base64로 변환 (캐시됨).
- * @returns {Promise<string|null>} base64 문자열, 실패 시 null
+ * 프로젝트 내 로컬 폰트 파일(fonts/NotoSansKR-subset.ttf)을 읽어 base64로 변환 (캐시됨).
+ *
+ * ⚠️ CDN fetch가 아닌 같은 오리진(프로젝트 번들) 파일을 사용한다:
+ * - 외부 CDN 의존 제거 → 네트워크 차단/404/CORS 문제 원천 차단
+ * - Vercel 정적 에셋으로 배포되며, 빠른 로드 + 브라우저 캐시 활용
+ * - jsPDF 2.5.x 호환을 위해 TrueType 아웃라인 + 유니코드 cmap을 가진
+ *   정적 TTF(변수 테이블 fvar/gvar 제거, WOFF/CFF 아님)여야 한다.
+ *   fonts/NotoSansKR-subset.ttf 는 KS X 1001 2350자 + 추가 224자 +
+ *   한글 자모 + 라틴/숫자/기호를 포함한 서브셋 (876KB).
+ *
+ * @returns {Promise<string|null>} base64 문자열, 실패/타임아웃 시 null
  */
 async function fetchKoreanFontBase64() {
   if (_koreanFontBase64Cache) return _koreanFontBase64Cache;
   if (_koreanFontFetchPromise) return _koreanFontFetchPromise;
 
   _koreanFontFetchPromise = (async () => {
-    // 주의: jsPDF 2.5.x의 addFont()는 WOFF/WOFF2와 CFF(OpenType) 기반 TTF를 파싱하지 못한다.
-    // TrueType 아웃라인을 가진 TTF 파일이어야 하며, google/fonts 저장소의 NotoSansKR 변수 폰트가
-    // TrueType 아웃라인 + 유니코드 cmap을 포함하여 정상 동작한다 (검증 완료).
-    // (@fontsource/noto-sans-kr은 WOFF만 제공, @expo-google-fonts는 CFF 기반이라 실패)
-    const fontUrl =
-      'https://raw.githubusercontent.com/google/fonts/main/ofl/notosanskr/NotoSansKR%5Bwght%5D.ttf';
-
-    const response = await fetch(fontUrl);
-    if (!response.ok) {
-      throw new Error(`Font fetch failed: ${response.status} ${response.statusText}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), KOREAN_FONT_FETCH_TIMEOUT_MS);
+    try {
+      // 같은 오리진 상대 경로 — CDN이 아님
+      const response = await fetch('fonts/NotoSansKR-subset.ttf', {
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        throw new Error(`Font fetch failed: ${response.status} ${response.statusText}`);
+      }
+      const fontData = await response.arrayBuffer();
+      const base64 = arrayBufferToBase64(fontData);
+      _koreanFontBase64Cache = base64;
+      return base64;
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    const fontData = await response.arrayBuffer();
-    const base64 = arrayBufferToBase64(fontData);
-    _koreanFontBase64Cache = base64;
-    return base64;
   })();
 
   try {
     return await _koreanFontFetchPromise;
   } catch (error) {
     _koreanFontFetchPromise = null; // 실패 시 다음 호출에서 재시도
-    throw error;
+    // 타임아웃(AbortError) 포함 모든 실패를 null로 변환 — 상위 폴백 로직에서 처리
+    console.warn('[pdf.js] 로컬 폰트 로드 실패:', error?.name === 'AbortError' ? '타임아웃' : error.message);
+    return null;
   }
 }
 
 /**
- * Loads Korean (NotoSansKR) font from CDN and registers it with jsPDF.
+ * Loads Korean (NotoSansKR) font from local bundle and registers it with jsPDF.
  *
  * ⚠️ jsPDF의 폰트 데이터(vFS)는 doc 인스턴스별로 분리되어 있으므로,
  * 실제 PDF를 출력할 doc에 직접 폰트를 등록해야 한다. 인자 doc를 생략하면
  * 내부적으로 새 doc를 만들어 등록만 하고 버린다 (기존 동작 호환).
+ *
+ * 실패/타임아웃 시 false를 반환한다 — 호출 측(downloadProposalPDF)에서
+ * 기본 영문 폰트(helvetica)로 폴백하므로 PDF 자체는 항상 다운로드된다.
  *
  * @param {Object} [doc] - 폰트를 등록할 jsPDF 인스턴스 (권장: 실제 출력할 doc)
  * @returns {Promise<boolean>} true if font loaded and registered successfully
@@ -63,6 +82,11 @@ async function fetchKoreanFontBase64() {
 async function loadKoreanFont(doc) {
   try {
     const base64 = await fetchKoreanFontBase64();
+    if (!base64) {
+      // 로컬 폰트 로드 실패/타임아웃 → 폴백 (throw 하지 않고 false 반환)
+      console.warn('[pdf.js] 한글 폰트를 로드할 수 없어 기본 폰트로 폴백합니다.');
+      return false;
+    }
 
     if (!checkJsPdfLoaded()) {
       throw new Error('jsPDF is not loaded. Cannot register Korean font.');
@@ -71,7 +95,7 @@ async function loadKoreanFont(doc) {
     const { jsPDF } = window.jspdf;
     const targetDoc = doc || new jsPDF();
 
-    // NotoSansKR[wght].ttf는 변수 폰트(단일 파일)라서 별도의 Bold TTF 파일이 없다.
+    // NotoSansKR-subset.ttf는 wght=400 정적 인스턴스라 별도의 Bold TTF 파일이 없다.
     // 같은 파일을 'normal'과 'bold' 스타일로 함께 등록해야
     // doc.setFont('NotoSansKR', 'bold') 호출 시 Times 폴백(한글 글리프 없음)으로
     // 떨어지지 않는다. 굵기 차이는 없지만 한글 출력이 보장된다.

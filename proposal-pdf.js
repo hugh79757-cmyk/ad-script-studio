@@ -26,9 +26,15 @@ async function downloadProposalPDF(data, state, scenes, rationale, principles) {
   // 반드시 실제 출력할 doc에 폰트를 등록해야 한다 (loadKoreanFont(doc)로 전달).
   // throwaway doc에 등록만 하고 새 doc를 만들면 "Unable to look up font label" 경고와
   // 함께 폰트 미임베딩(한글 미출력) 상태로 생성된다.
+  // 로컬 폰트 로드 실패/타임아웃 시 loadKoreanFont가 false를 반환하므로,
+  // 기본 영문 폰트(helvetica)로 PDF를 계속 생성한다 (한글이 깨져도 다운로드는 보장).
   try {
-    await loadKoreanFont(doc);
-    doc.setFont('NotoSansKR');
+    const fontLoaded = await loadKoreanFont(doc);
+    if (fontLoaded) {
+      doc.setFont('NotoSansKR');
+    } else {
+      console.warn('[proposal-pdf.js] 한글 폰트 로드 실패 — 기본 영문 폰트로 PDF 생성');
+    }
   } catch (error) {
     console.warn('[proposal-pdf.js] 한글 폰트 로드 실패, 기본 폰트 사용');
   }

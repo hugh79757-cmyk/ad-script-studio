@@ -11,8 +11,8 @@
   }
   console.log('✅ jsPDF 로드됨');
   
-  // 2. 폰트 CDN 접근 테스트
-  const fontUrl = 'https://raw.githubusercontent.com/google/fonts/main/ofl/notosanskr/NotoSansKR%5Bwght%5D.ttf';
+  // 2. 로컬 폰트 파일 접근 테스트 (같은 오리진 — CDN 아님)
+  const fontUrl = 'fonts/NotoSansKR-subset.ttf';
   try {
     const resp = await fetch(fontUrl, { method: 'HEAD', mode: 'cors' });
     if (resp.ok) {
