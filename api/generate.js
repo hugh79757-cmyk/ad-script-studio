@@ -154,7 +154,9 @@ ${inputContext}
       "principleName": "원칙 이름",
       "type": "TYPE_HOOK | TYPE_CTA | TYPE_PSYCH",
       "reason": "이 제품에 이 원칙이 필요한 이유 (근거 필드 포함)",
-      "groundingTag": "근거: [사용된 필드명]"
+      "groundingTag": "근거: [사용된 필드명]",
+      "usedFields": ["target", "reviews"],
+      "example": "구현 예시 문자열"
     }
   ]
 }
@@ -287,11 +289,13 @@ function parseApiResponse(data) {
   
   // 파싱 성공 시 구조화된 결과 반환
   if (parsed && parsed.strategy && parsed.script) {
+    // rationale을 수동 모드 포맷으로 정규화
+    const normalizedRationale = normalizeRationale(parsed.rationale || []);
     return {
       success: true,
       strategy: parsed.strategy,
       script: parsed.script,
-      rationale: parsed.rationale || [],
+      rationale: normalizedRationale,
       rawText: text,
       model: data.model,
       usage: data.usage
@@ -306,6 +310,32 @@ function parseApiResponse(data) {
     usage: data.usage,
     error: '응답을 JSON으로 파싱할 수 없습니다.'
   };
+}
+
+/**
+ * LLM rationale 출력을 수동 모드 포맷으로 정규화
+ * @param {Array} rationale - LLM이 반환한 rationale 배열
+ * @returns {Array} 수동 모드 포맷으로 변환된 배열
+ */
+function normalizeRationale(rationale) {
+  if (!Array.isArray(rationale)) return [];
+  
+  return rationale.map(item => {
+    // groundingTag를 reason에 병합 (수동 모드 방식)
+    const reason = item.reason || '';
+    const groundingTag = item.groundingTag || '';
+    const mergedReason = groundingTag ? `${reason} ${groundingTag}` : reason;
+    
+    return {
+      principleId: item.principleId || '',
+      principleName: item.principleName || '',
+      type: item.type || 'TYPE_HOOK',
+      reason: mergedReason,
+      usedFields: Array.isArray(item.usedFields) ? item.usedFields : [],
+      example: item.example || '',
+      excluded: false
+    };
+  });
 }
 
 // ============================================================================

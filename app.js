@@ -457,12 +457,9 @@ function renderAutoResult(result) {
     }
   }
   
-  // 당위성 근거 렌더링 (전략 탭에 추가)
-  if (result.rationale) {
-    const rationaleDiv = document.createElement('div');
-    rationaleDiv.className = 'auto-rationale';
-    rationaleDiv.innerHTML = `<h4>당위성 근거</h4>${result.rationale}`;
-    strategyEl.appendChild(rationaleDiv);
+  // 당위성 근거 렌더링 (전략 탭에 추가) — 수동/자동 모드 모두 renderRationaleCards 사용
+  if (result.rationale && Array.isArray(result.rationale)) {
+    renderRationaleCards({ generated: result.rationale, skipped: [] });
   }
   
   // Phase 6: "2번으로 보내기" 버튼 추가 (제안서 결과 하단)
