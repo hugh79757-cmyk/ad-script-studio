@@ -4,18 +4,18 @@
 
 | Field | Value |
 |-------|-------|
-| Version | v1 |
+| Version | v1 (최종 완료) |
 | Phases | 7 (Phase 1~7) |
-| Current Phase | Phase 7 Wave 2 (frontend benchmark tab) 구현 완료 — 실 E2E는 키 체크포인트 대기 |
-| Status | Phase 1~6 완료, Phase 7 Wave 1(api/benchmark.js)·Wave 2(benchmark-analyzer.js 벤치마킹 탭)·Wave 3(vercel.json/ENVIRONMENT-GUIDE.md) 구현 완료 — 실 API/브라우저 E2E는 키 체크포인트 대기 |
+| Current Phase | — (마일스톤 종료) |
+| Status | ✅ **v1 전체 실증 검증 완료 (2026-08-01)** — 프로덕션 배포 + E2E + PDF 한글 폰트 최적화 포함. Phase 1~6 + Phase 7(벤치마킹) 모두 구현/검증 완료. v1.1 후보는 BACKLOG.md로 이관 |
 
 ## Milestone v1 Summary
 
 - **Vision:** E-commerce **전략 제안서 생성기** (대본 생성기가 아님)
-- **Phases:** 6 phases — UI(확장입력), 대본(구성요소), **당위성엔진+제안서(핵심)**, API, 영상소스(내부용), 배포
-- **Requirements:** 27 total (R1-R27) — 기존 22개 + 신규 5개
+- **Phases:** 6 phases — UI(확장입력), 대본(구성요소), **당위성엔진+제안서(핵심)**, API, 영상소스(내부용), 배포 + Phase 7(벤치마킹 분석기, v1 내 추가)
+- **Requirements:** 27 total (R1-R27) — 기존 22개 + 신규 5개 (+ Phase 7 R28-R35)
 - **핵심 변경 (2026-07-31):** Phase 3을 당위성 엔진 + 설득형 제안서 중심으로 재설계. 영상 소스 생성기는 내부용으로 격하.
-- **Status:** Phase 1-6 구현 완료 (Milestone v1 완료)
+- **Status:** ✅ **완료 (2026-08-01)** — 프로덕션 배포(https://ad-script-studio.vercel.app) + 수동/자동 모드 E2E + PDF 한글 폰트 최적화(v1.0.1: CDN 변수 폰트→로컬 서브셋, PDF 817KB→316KB 61% 감소) + Phase 7 UAT 12/12. v1.1 후보는 BACKLOG.md.
 
 ## Artifact Inventory
 
@@ -65,13 +65,19 @@
 | deploy.sh | [검증됨] | `deploy.sh` — 자동화 배포 스크립트 |
 | ENVIRONMENT-GUIDE.md | [검증됨] | `ENVIRONMENT-GUIDE.md` — ANTHROPIC/TAVILY/KV/APIFY/OPENAI 환경변수 설정 가이드 (Phase 7 Wave 3에서 APIFY/OPENAI 발급 방법·curl·비용 안내 추가) |
 | phase-07/03-config-docs-SUMMARY.md | [검증됨] | `.planning/phases/07-benchmark-analyzer/03-config-docs-SUMMARY.md` — Wave 3 요약 |
-| RETROSPECTIVE.md | 미생성 | — |
+| phase-07/07-UAT.md | [검증됨] | `.planning/phases/07-benchmark-analyzer/07-UAT.md` — UAT 12/12 통과 (실제 gymshark 계정 E2E 포함) |
+| BACKLOG.md | [검증됨] | `BACKLOG.md` — v1.1 후보 (PDF bold 굵기, 자동 모드 지연 등) |
+| RETROSPECTIVE.md | [검증됨] | `.planning/reports/RETROSPECTIVE.md` — v1 회고 작성 완료 |
 
 ## Next Actions
 
-1. **[체크포인트] 사용자 수동:** `APIFY_API_TOKEN`(Apify 가입 → Settings → API & Integration), `OPENAI_API_KEY`(OpenAI Platform → API keys) 발급/설정 — .env.local + Vercel env (Production/Preview/Development)
-2. 키 확인 후: Wave 1 실 API curl E2E (POST /api/benchmark → GET 폴링 stage 전이 → 전사/분석 실동작) + Wave 2 브라우저 E2E (벤치마킹 탭 → 입력 → 분석 시작 → 스테이퍼 → done 4종 결과 + 카피 버튼 + 탭 전환 회귀)
-3. Milestone v1 회고 (RETROSPECTIVE.md 생성)
+1. **v1 마일스톤 종료** — 프로덕션 배포 + E2E + PDF 폰트 최적화 검증 완료 (2026-08-01)
+2. **v1.1 백로그 (BACKLOG.md)**
+   - PDF 한글 bold 굵기 미표현 — Bold 서브셋 별도 등록 검토 (PDF 크기 2배 트레이드오프)
+   - 자동 모드 API 생성 지연 (90초) — 프롬프트 경량화/스트리밍/캐시 검토
+   - jsPDF CDN 의존 (cdn.jsdelivr.net) — 자체 호스팅 검토
+   - 서브셋 폰트 1.05MB — 기호 분리 시 876KB 가능
+3. **GitHub 레포 프라이빗 전환** — Settings → Danger Zone → Make private (지연 중)
 
 ## Git History
 
@@ -127,3 +133,6 @@ dc4852d docs: initialize GSD planning for AD SCRIPT STUDIO
 | v1-phase7-wave1 | 2026-08-01 | Phase 7 Wave 1 완료: api/benchmark.js (KV 스테이지 머신 — POST job 생성 + Apify run 시작 / GET 폴링 crawling→transcribing→analyzing→done, 서버 강제 비용 상한). 오프라인 검증 통과 (11 unit groups + 82 inline assertions). 실 API E2E는 사용자 키 체크포인트 후 진행. |
 | v1-phase7-wave2 | 2026-08-01 | Phase 7 Wave 2 완료: benchmark-analyzer.js (벤치마킹 탭 UI + POST job + 6s setInterval 폴링 + 진행 스테이퍼 + (a)~(d) 4종 결과 렌더 + 카피 버튼), index.html 탭 버튼/컨테이너/script 1줄, state-manager.js benchmarkResults 슬롯 + saveBenchmarkResults, style.css .benchmark-* 35개 클래스 추가. 오프라인 검증 통과 (62 assertions). 기존 2탭 무손상(additive). 실 브라우저 E2E는 사용자 키 체크포인트 후 진행. |
 | v1-phase7-wave3 | 2026-08-01 | Phase 7 Wave 3 완료: vercel.json functions.api/benchmark.js maxDuration 300 + env 블록 APIFY_API_TOKEN/OPENAI_API_KEY(@-sentinel) 추가(기존 KV 2개 보존), ENVIRONMENT-GUIDE.md 신규 환경변수 문서(발급 방법 2섹션·벤치마킹 API curl·비용 안내 \$0.13~0.16·상한 정책·엔드포인트 표 2행) 반영. 오프라인 검증 통과 (node JSON 파싱 + grep). 실 배포 검증은 키 체크포인트 후. |
+| v1-phase7-uat | 2026-08-01 | Phase 7 UAT 완료: UAT 12/12 통과 (실제 gymshark 계정 E2E 포함 — POST job → 폴링 stage 전이 → 전사/분석/대본 재조립). 분석 프로바이더 체인 문서 정정. |
+| v1-0-1-font | 2026-08-01 | PDF 한글 폰트 최적화: CDN 변수 폰트(10.4MB) fetch 제거 → 로컬 서브셋(1.1MB, KS X 1001 2,350자+224+기호988+자모/라틴) base64 임베딩 + AbortController 10초 타임아웃 + 기본 폰트 폴백. PDF 817KB→316KB (61% 감소), 글리프 누락 0. 프로덕션 배포 + E2E 재검증 완료. |
+| v1-final | 2026-08-01 | **v1 전체 실증 검증 완료 (프로덕션 배포 + E2E + PDF 한글 폰트 최적화 포함)**. Phase 1~7 모두 구현/검증 완료. Proposal PDF 라이트 테마 전환 (가독성 이슈 해결 — 흰 배경+어두운 텍스트). v1.1 후보는 BACKLOG.md로 이관. |

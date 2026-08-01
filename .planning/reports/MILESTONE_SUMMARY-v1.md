@@ -1,9 +1,10 @@
 # MILESTONE SUMMARY — AD SCRIPT STUDIO v1
 
 > Generated: 2026-07-31
-> Updated: 2026-07-31 (리팩터링: 전략 제안서 중심으로 재정의)
-> Status: Planning Complete, Implementation Pending
-> Milestone: v1 (Phase 1~6)
+> Updated: 2026-08-01 (v1 최종 — 실증 검증 완료)
+> Status: ✅ **완료** — 프로덕션 배포 + E2E + PDF 한글 폰트 최적화 포함
+> Milestone: v1 (Phase 1~6) + Phase 7 (벤치마킹 분석기, v1 범위 내 추가)
+> Production: https://ad-script-studio.vercel.app
 
 ---
 
@@ -187,55 +188,59 @@ rationale          → AI-generated rationale (진가 발휘)
 
 | ID | Category | Description | Phase | Status |
 |----|----------|-------------|-------|--------|
-| R1 | UI | 2-panel responsive layout | P1 | [부분검증] Planned |
-| R2 | UI | Dark theme | P1 | [부분검증] Planned |
-| R3 | UI | **10 input fields** (expanded) | P1 | [부분검증] Planned — **expanded from 5** |
-| R4 | UI | Result area (strategy/script/storyboard tabs) | P1 | [부분검증] Planned — **added strategy tab** |
-| R5 | Logic | Template-based 60s script generation | P2 | [부분검증] Planned |
-| R6 | PDF | jsPDF download | P2 | [부분검증] Planned |
-| R7 | UI | Copy / New buttons | P2 | [부분검증] Planned |
-| R8 | Skill | 26 principles injection | P3 | [부분검증] Skill file ready; injection logic planned |
-| R9 | Logic | **Product-specific rationale generation** ⭐ | P3 | [부분검증] Planned — **full redesign** |
-| R10 | PDF | **Persuasion-structured proposal PDF** ⭐ | P3 | [부분검증] Planned — **full redesign** |
-| R11 | API | Vercel serverless + Claude API | P4 | [부분검증] Planned |
-| R12 | Security | API key server-side only | P4 | [부분검증] Planned |
-| R13 | UX | Manual ↔ Auto mode toggle | P4 | [부분검증] Planned |
-| R14 | UI | Video Source Generator tab | P5 | [부분검증] Planned — **internal tool** |
-| R15 | Logic | Scene parsing | P5 | [부분검증] Planned |
-| R16 | Logic | EN prompt generation | P5 | [부분검증] Planned |
-| R17 | UX | Detail level control | P5 | [부분검증] Planned |
-| R18 | UI | Per-prompt copy buttons | P5 | [부분검증] Planned |
-| R19 | UX | Tab switching | P6 | [부분검증] Planned |
-| R20 | Logic | "Send to #2" auto-delivery | P6 | [부분검증] Planned |
-| R21 | Deploy | Vercel deployment | P6 | [부분검증] Planned |
-| R22 | QA | Integration E2E test | P6 | [부분검증] Planned |
-| R23 | UI | **Competitor products/differences input** | P1 | [부분검증] Planned — **NEW** |
-| R24 | UI | **Price, reviews, trust factors, excluded keywords inputs** | P1 | [부분검증] Planned — **NEW** |
-| R25 | PDF | **Problem diagnosis section in proposal** | P3 | [부분검증] Planned — **NEW** |
-| R26 | PDF | **Expected impact section (general, not guaranteed)** | P3 | [부분검증] Planned — **NEW** |
-| R27 | Logic | **Dual-mode rationale (template manual + AI auto)** | P3 | [부분검증] Planned — **NEW** |
+| R1 | UI | 2-panel responsive layout | P1 | ✅ [검증됨] — 통합 E2E + 프로덕션 확인 |
+| R2 | UI | Dark theme | P1 | ✅ [검증됨] — 웹앱 UI 적용 |
+| R3 | UI | **10 input fields** (expanded) | P1 | ✅ [검증됨] — 5+5 필드 확인 |
+| R4 | UI | Result area (strategy/script/storyboard tabs) | P1 | ✅ [검증됨] — 3-tab 확인 |
+| R5 | Logic | Template-based 60s script generation | P2 | ✅ [검증됨] — 타임라인/대사/연출 렌더링 |
+| R6 | PDF | jsPDF download | P2 | ✅ [검증됨] — 일반+제안서 PDF 다운로드 |
+| R7 | UI | Copy / New buttons | P2 | ✅ [검증됨] |
+| R8 | Skill | 26 principles injection | P3 | ✅ [검증됨] — skill-loader.js fetch+파싱 |
+| R9 | Logic | **Product-specific rationale generation** ⭐ | P3 | ✅ [검증됨] — 수동 템플릿 + 자동 API 논리 |
+| R10 | PDF | **Persuasion-structured proposal PDF** ⭐ | P3 | ✅ [검증됨] — 문제진단→전략→크리에이티브→기대효과→부록 순서 확인 |
+| R11 | API | Vercel serverless + Claude API | P4 | ✅ [검증됨] — /api/generate, 무료 우선 5단계 폴백 체인 |
+| R12 | Security | API key server-side only | P4 | ✅ [검증됨] — 프론트엔드 키 미노출 |
+| R13 | UX | Manual ↔ Auto mode toggle | P4 | ✅ [검증됨] — 프로덕션 자동 모드 E2E 90초 생성 |
+| R14 | UI | Video Source Generator tab | P5 | ✅ [검증됨] |
+| R15 | Logic | Scene parsing | P5 | ✅ [검증됨] |
+| R16 | Logic | EN prompt generation | P5 | ✅ [검증됨] |
+| R17 | UX | Detail level control | P5 | ✅ [검증됨] |
+| R18 | UI | Per-prompt copy buttons | P5 | ✅ [검증됨] |
+| R19 | UX | Tab switching | P6 | ✅ [검증됨] |
+| R20 | Logic | "Send to #2" auto-delivery | P6 | ✅ [검증됨] |
+| R21 | Deploy | Vercel deployment | P6 | ✅ [검증됨] — https://ad-script-studio.vercel.app |
+| R22 | QA | Integration E2E test | P6 | ✅ [검증됨] — test-e2e.js 수동/자동 모드 |
+| R23 | UI | **Competitor products/differences input** | P1 | ✅ [검증됨] — **NEW** |
+| R24 | UI | **Price, reviews, trust factors, excluded keywords inputs** | P1 | ✅ [검증됨] — **NEW** |
+| R25 | PDF | **Problem diagnosis section in proposal** | P3 | ✅ [검증됨] — **NEW** |
+| R26 | PDF | **Expected impact section (general, not guaranteed)** | P3 | ✅ [검증됨] — **NEW** |
+| R27 | Logic | **Dual-mode rationale (template manual + AI auto)** | P3 | ✅ [검증됨] — **NEW** |
+| R28-R35 | Phase 7 | 벤치마킹 분석기 (크롤링/전사/구조해부/대본재조립) | P7 | ✅ [검증됨] — UAT 12/12 (실제 gymshark 계정 E2E 포함). 외부 API 키 의존 검증은 키 설정 환경에서 수행 |
 
-**Note:** All 27 requirements are planned but have zero implementation. The project is in a **planning-complete, implementation-pending** state.
+**Note:** All 27 requirements + Phase 7 (R28-R35) are **implemented and verified** in production (2026-08-01).
 
 ---
 
 ## 6. Technical Debt & Risks
 
 ### Current Debt
-- **Zero implementation debt** — No code exists yet. Clean start.
-- **No test infrastructure** — No testing framework, no CI/CD, no linting.
+- **jsPDF CDN 의존** — `jspdf.umd.min.js`가 여전히 cdn.jsdelivr.net에서 로드됨. CDN 장애 시 PDF 생성 불가 가능성. v1.1 후보 (BACKLOG.md).
+- **서브셋 폰트 1.05MB** — 목표(300KB~1MB) 상한을 10% 초과. KS X 1001 기호 988자 포함 최소 구성. 기호 별도 폰트 분리 시 876KB 가능.
+- **자동 모드 API 생성 지연 (90초)** — 폰트와 무관, UX 저하. v1.1 후보.
+- **한글 bold 굵기 미표현** — 서브셋이 wght=400 정적 인스턴스라 bold 문장이 normal과 동일 굵기. 텍스트 무결성은 정상, v1.1 후보.
 
 ### Identified Risks
 
-| Risk | Severity | Mitigation |
-|------|----------|------------|
-| `shortform-copywriting.md` runtime fetch may fail on Vercel (CWD issues) | High | Bundle file or embed as env variable; test in Vercel preview |
-| Rationale engine in manual mode produces hollow template text | Medium | Clear UX signal that auto mode delivers better results; template is a stepping stone |
-| Korean font rendering in jsPDF (Noto Sans KR CDN dependency) | Medium | Pre-download font subset; fallback to system font |
-| Claude API rate limits in auto mode | Medium | Retry logic; clear error messages; manual mode as fallback |
-| "Expected Impact" section may be misread as guaranteed results | Medium | Use conditional language ("일반적으로", "통상적으로"); include disclaimer |
-| No authentication — anyone can use API endpoint | Low | Vercel URL is obscure; add rate limiting if needed |
-| Vercel serverless cold start latency | Medium | Loading spinner; consider edge functions |
+| Risk | Severity | Mitigation | Status |
+|------|----------|------------|--------|
+| `shortform-copywriting.md` runtime fetch may fail on Vercel (CWD issues) | High | Bundle file or embed as env variable; test in Vercel preview | ✅ 해결 — 배포 후 26원칙 주입 정상 |
+| Rationale engine in manual mode produces hollow template text | Medium | Clear UX signal that auto mode delivers better results; template is a stepping stone | ✅ 자동 모드 API 논리로 차별화 확인 |
+| Korean font rendering in jsPDF (Noto Sans KR CDN dependency) | Medium | Pre-download font subset; fallback to system font | ✅ 해결 — 로컬 서브셋 1.1MB + 10초 타임아웃 폴백 + 기본 폰트 폴백 |
+| Claude API rate limits in auto mode | Medium | Retry logic; clear error messages; manual mode as fallback | ✅ 무료 우선 5단계 폴백 체인 적용 |
+| "Expected Impact" section may be misread as guaranteed results | Medium | Use conditional language ("일반적으로", "통상적으로"); include disclaimer | ✅ 조건부 표현 + 면책 문구 사용 |
+| No authentication — anyone can use API endpoint | Low | Vercel URL is obscure; add rate limiting if needed | 잔존 — v1.1 검토 항목 |
+| Vercel serverless cold start latency | Medium | Loading spinner; consider edge functions | ✅ 로딩 스피너 적용. 잔존: 자동 모드 90초 |
+| PDF 가독성 (흰 배경+흰 텍스트) | High | 라이트 테마 통일 | ✅ 해결 (2026-08-01) — Proposal PDF 전 섹션 라이트 테마 전환 |
 
 ### Future Considerations
 - Add authentication (if tool needs to be shared beyond team)
@@ -246,16 +251,68 @@ rationale          → AI-generated rationale (진가 발휘)
 
 ---
 
-## 7. Getting Started
+## 7. 주요 이슈와 해결 과정 (v1 개발 중 겪은 것)
+
+### 7-1. PDF 다운로드 5개 버그 (commit c2c6294)
+- jsPDF CDN 404 → 버전 고정(2.5.2) + URL 정정
+- 자동 모드에서 window 데이터 미노출 → appState 주입 방식 수정
+- 수동 모드 버튼 소실 → 이벤트 바인딩 순서 수정
+- PROPOSAL_LAYOUT.margin 오타 → 호환성 필드 추가
+- 한글 폰트 TTF 미등록 → wght=400 정적 인스턴스 변환
+
+### 7-2. 자동 모드 API 지연
+- 프로덕션 E2E에서 90초 소요 확인. 단일 모델 의존이 아닌 **무료 우선 5단계 폴백 체인** 적용 (commit 347222c)으로 가용성 확보.
+
+### 7-3. 한글 폰트 최적화 (v1.0.1, commit c799801)
+- **문제:** CDN 변수 폰트(10.4MB) fetch — 외부 의존 + 로드 실패 시 한글 깨짐
+- **해결:** Noto Sans KR 변수 폰트를 wght=400 정적 인스턴스로 변환 후
+  KS X 1001 2,350자 + 추가 224자 + 자모/라틴/숫자 + 기호 988자로 서브셋
+  → `fonts/NotoSansKR-subset.ttf` 1.1MB (89% 감소), base64 임베딩, 로컬 fetch
+- **안전망:** AbortController 10초 타임아웃 + 실패 시 기본 영문 폰트로 PDF 계속 생성
+- **결과:** PDF 817KB→316KB (61% 감소), 전 글리프 커버 (누락 0)
+
+### 7-4. PDF 가독성 (2026-08-01)
+- **문제:** Proposal PDF가 흰 배경에 밝은 회색/흰색 텍스트로 렌더링 — 다크 테마용
+  밝은 텍스트 팔레트(224,224,224)를 흰 배경(기본)에 적용한 채 배경 채우기를
+  표지에만 적용한 것이 원인
+- **해결:** 전체 라이트 테마 통일 — PROPOSAL_LAYOUT.colors 전환
+  (textPrimary 224→51, textSecondary 150→120 등) + 표지 흰 배경 + 전 섹션 명시적
+  어두운 텍스트 색 설정 (이전 페이지 색상 상속 방지)
+- **검증:** PyMuPDF 렌더링에서 모든 페이지 배경 (255,255,255), 텍스트 색상
+  0x111111~0x787878만 존재 (흰 텍스트 0건)
+
+### 7-5. Phase 7 벤치마킹 분석기 (commit 1dcfc92~efd12a0)
+- Vercel 타임아웃 회피를 위해 KV job-status 스테이지 머신 + 폴링 패턴 도입
+- 서버 강제 비용 상한 (MAX_ANALYZE_REELS=5, maxTotalChargeUsd=1)
+- UAT 12/12 통과 — 실제 gymshark 계정으로 실 E2E 수행
+
+---
+
+## 8. v1.1 백로그 이관 항목 (BACKLOG.md)
+
+| 항목 | 설명 | 상태 |
+|------|------|------|
+| PDF 한글 bold 굵기 | wght=400 서브셋이라 bold 미표현. Bold 서브셋 별도 등록 시 PDF 2배 트레이드오프 | backlog |
+| 자동 모드 API 지연 (90초) | 프롬프트 경량화/스트리밍/캐시 검토 | backlog |
+| jsPDF CDN 의존 | cdn.jsdelivr.net → 자체 호스팅 검토 | backlog |
+| 서브셋 폰트 1.05MB | 기호 별도 폰트 분리 시 876KB | backlog |
+
+상세: `BACKLOG.md` (프로젝트 루트)
+
+---
+
+
+## 9. Getting Started
 
 ### For New Team Members
 
 1. **Read this summary** (you're here)
 2. **Read `.planning/PROJECT.md`** for vision — note the strategic shift to "전략 제안서 생성기"
-3. **Read `.planning/ROADMAP.md`** for the restructured 6-phase plan
+3. **Read `.planning/ROADMAP.md`** for the restructured 6-phase plan (+ Phase 7)
 4. **Read `.planning/REQUIREMENTS.md`** for all 27 requirements with acceptance criteria
 5. **Read `skills/custom/shortform-copywriting.md`** — the 26 principles are the core domain knowledge
 6. **Key concept:** The project's core is Phase 3 (당위성 엔진 + 설득형 제안서). Everything else supports it.
+7. **Read `BACKLOG.md`** — v1.1 후보 항목 (bold 굵기, 자동 모드 지연, CDN 의존 등)
 
 ### For Developers Starting Implementation
 
