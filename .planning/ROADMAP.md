@@ -165,3 +165,34 @@
 **Agent Verification (After):**
 - gsd-verifier: "전체 플로우가 동작하는가?" → 기획안 생성 → 2번으로 보내기 → 영상 소스 생성 확인
 - gsd-ui-checker: 탭 전환 상태 보존, 배포 URL 접근 확인
+
+---
+
+## Phase 7: 벤치마킹 대본 분석기 (Benchmark Script Analyzer)
+
+> 추가 일자: 2026-08-01
+> ⚠️ Phase 번호 정정: 초기 논의에서 "Phase 6"으로 언급되었으나 Phase 6(두 도구 연결+배포)이 이미 존재하여 **Phase 7**로 확정. Phase 3 Wave 2 진행 파일과 독립된 새 Phase (순수 추가, additive).
+
+**Goal:** 인스타그램 계정을 입력하면 5단계 파이프라인(크롤링 → 바이럴 필터링 → Whisper 전사 → 공통 구조 해부 → 새 대본 재조립)이 동작하는 "벤치마킹 분석기" 탭을 추가한다. 기존 "전략 제안서 생성기"(Phase 3)와는 독립적으로 동작하되, 분석된 구조 데이터를 제안서 생성 플로우의 근거 자료로 가져다 쓸 수 있는 연동 포인트(구조 해부 JSON 형식 + KV 저장 위치)는 열어둔다 — **이번 Phase에서는 양방향 연동 구현 안 함**.
+
+**Requirements:** R28, R29, R30, R31, R32, R33, R34, R35
+
+**Success Criteria:**
+- "벤치마킹 분석기" 탭이 기존 2개 탭(proposal/video)과 함께 표시되고 전환 동작
+- IG 계정 URL/아이디 입력 → **(a) 바이럴 릴스 리스트(조회수 포함)** 출력
+- **(b) 각 릴스 전사 대본** 출력 (OpenAI Whisper, 한국어)
+- **(c) 공통 구조 해부 분석(훅/전개/클로징)** 출력 (Claude, segment 타임스탬프 기반)
+- **(d) 분석 구조 기반 새 대본 초안** 출력 (사용자 입력 키워드/브랜드 반영)
+- Apify/Whisper/Claude 호출이 **Vercel 타임아웃 없이** 완료 (job-status 폴링 패턴)
+- "분석할 릴스 개수" 상한(`MAX_ANALYZE_REELS=5`)이 **서버 강제**로 적용되어 비용 통제
+- 기존 proposal/video 탭 무손상 (additive 원칙 — 기존 파일 수정 최소화)
+
+**Parallelization:**
+- Wave 1 (default): `api/benchmark.js` — KV job-status 스테이지 머신 (POST job 생성 + Apify run 시작 / GET 폴링: crawling→transcribing→analyzing→done), 서버 상수로 비용 상한 강제
+- [체크포인트] 사용자 수동: `APIFY_API_TOKEN`, `OPENAI_API_KEY` 발급/설정 (실 API E2E 전 필수)
+- Wave 2 (after wave 1): `benchmark-analyzer.js` (신규 탭 UI + 폴링 + 결과 렌더링), index.html 탭 버튼/컨테이너, state-manager.js 최소 확장, style.css 추가
+- Wave 3 (after wave 1): vercel.json `maxDuration: 300` + env 블록, ENVIRONMENT-GUIDE.md APIFY/OPENAI 문서
+
+**Agent Verification (After):**
+- gsd-verifier: "벤치마킹 분석기가 동작하는가?" → 탭 표시/전환, (a)~(d) 4종 결과, 타임아웃 없음, 상한 적용
+- gsd-ui-checker: 탭 전환, 진행 스테이퍼, 결과 카드 레이아웃, 카피 버튼 동작

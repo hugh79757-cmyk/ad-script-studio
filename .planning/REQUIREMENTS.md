@@ -34,6 +34,14 @@
 | R25 | PDF | **제안서 PDF: 문제진단 섹션** — 타겟이 겪는 문제를 데이터/리뷰 기반으로 서술 | P3 | **신규** |
 | R26 | PDF | **제안서 PDF: 기대효과 서술 섹션** — 수치 보장이 아닌 근거 기반 일반 서술 | P3 | **신규** |
 | R27 | Logic | **당위성 근거 자동 생성** — 수동 모드는 정형 문구, 자동 모드는 Claude API 연동 논리 생성 | P3 | **신규** |
+| R28 | UI | **벤치마킹 분석기 탭** 표시 + 전환 (기존 2탭과 함께, additive) | P7 | **신규** |
+| R29 | API | **Apify 크롤링** — job 생성 + `apify/instagram-reel-scraper` run 시작 + dataset fetch (resultsLimit 30) | P7 | **신규** |
+| R30 | Logic | **바이럴 필터 + 개수 상한** — `videoViewCount >= 50,000` 필터, `MAX_ANALYZE_REELS=5` 서버 강제, `videoDuration > 180s` 전사 제외 | P7 | **신규** |
+| R31 | API | **Whisper 전사** — `audioUrl` fetch → `whisper-1` multipart (`language=ko`, `verbose_json` segment 타임스탬프) | P7 | **신규** |
+| R32 | Logic | **구조 분석 + 재조립** — segment 기반 훅/전개/클로징 해부 + 새 키워드/브랜드 대본 초안 (Claude) | P7 | **신규** |
+| R33 | Logic | **job-status 폴링/비용 통제** — KV 스테이지 머신(crawling→transcribing→analyzing→done), GET당 단위 작업, `maxTotalChargeUsd=1`, KV TTL 24h, 폴링 120회 상한 | P7 | **신규** |
+| R34 | Config | **env 가이드** — `APIFY_API_TOKEN`/`OPENAI_API_KEY` (vercel.json env 블록 + ENVIRONMENT-GUIDE.md) | P7 | **신규** |
+| R35 | UI | **결과 렌더링 + 카피** — (a) 릴스 리스트/조회수 (b) 전사 대본 (c) 구조 해부 (d) 새 대본 + 진행 스테이지 표시 + 카피 버튼 | P7 | **신규** |
 
 ---
 
@@ -238,3 +246,123 @@
 - 수동 모드의 한계를 UX로 명시하여 자동 모드 전환 유도
 - 자동 모드 응답 구조: `{ rationale: string, appliedPrinciples: Array<{name, reason, example}> }`
 - API 에러 시 수동 모드 템플릿으로 폴백
+
+---
+
+# Phase 7 — 벤치마킹 대본 분석기 (신규)
+
+> 추가 일자: 2026-08-01
+> 배경: 시장에서 실제로 터진(바이럴) 숏폼이 어떤 구조를 쓰는지에 대한 1차 데이터가 없어,
+> 대본 구조 근거가 사용자 직접 입력에만 의존함. 벤치마킹 분석기는 IG 릴스를 크롤링·전사·해부하여
+> **실측 구조 데이터**를 만들어내고, 이를 템플릿으로 삼아 새 대본을 재조립하는 도구.
+> Phase 3(전략 제안서)과의 관계: 독립 동작하되, 구조 해부 JSON(`{ hook, development, closing }`)과
+> KV 저장 위치(`benchmark:{jobId}`)를 연동 포인트로 열어둠 — 이번 Phase에서 양방향 연동은 구현 안 함.
+
+## R28: 벤치마킹 분석기 탭 (신규)
+
+**User Story:** 사용자가 기존 2개 탭(전략 제안서/영상 소스)과 함께 벤치마킹 분석기 탭을 사용할 수 있다.
+
+**Acceptance Criteria:**
+- 탭 바에 "벤치마킹 분석기" 버튼이 기존 탭과 함께 표시됨 (`data-tab="benchmark"`)
+- 클릭 시 벤치마킹 도구 컨테이너로 전환, 기존 탭과 왕복 전환 정상
+- 기존 proposal/video 탭 동작 무손상 (additive — 신규 추가만, 기존 파일 수정 최소화)
+- 한국어 UI
+
+**Dev Notes:**
+- `index.html`: 탭 버튼 1개 + `#benchmark-tool` 컨테이너 + `<script src="benchmark-analyzer.js">`
+- `state-manager.js`: `tabState.benchmarkResults` 슬롯 + `saveBenchmarkResults()` (연동 포인트 개방)
+
+## R29: Apify 크롤링 (신규)
+
+**User Story:** 사용자가 IG 계정을 입력하면 해당 계정의 릴스가 자동으로 크롤링된다.
+
+**Acceptance Criteria:**
+- 입력: IG 계정 URL 또는 아이디 (URL이면 유저네임만 추출)
+- `POST /api/benchmark` → job 생성 + 공식 `apify/instagram-reel-scraper` run 시작 (resultsLimit 30) → 즉시 `201 { success, jobId }` 응답
+- Apify run 상태 폴링 → SUCCEEDED 시 dataset fetch
+- API 키 미설정 시 한국어 오류 500
+
+**Dev Notes:**
+- 액터: `apify/instagram-reel-scraper` (공식, 쿠키 불필요 기본), `maxTotalChargeUsd=1`로 비용 상한
+- 폴링: `GET /v2/actor-runs/{runId}` → `GET /v2/actor-runs/{runId}/dataset/items`
+
+## R30: 바이럴 필터 + 개수 상한 (신규)
+
+**User Story:** 조회수 기준으로 터진 릴스만 선별되고, 분석 개수에 상한이 적용된다.
+
+**Acceptance Criteria:**
+- `videoViewCount >= 50,000` AND `videoDuration <= 180s` 필터 (조회수 내림차순)
+- 상위 `MAX_ANALYZE_REELS`(기본 5, UI에서 3~5 선택)개만 전사/분석 대상
+- 서버 상수로 클램프 — 사용자가 UI를 우회해 요청해도 초과 불가 (maxReels=10 요청 → 5 저장)
+- 바이럴 0건/릴스 0건(비공개·신생 계정) → 한국어 오류 처리
+
+**Dev Notes:**
+- 상수: `VIRAL_VIEWS_THRESHOLD = 50000`, `MAX_ANALYZE_REELS = 5`, `APIFY_RESULTS_LIMIT = 30`
+
+## R31: Whisper 전사 (신규)
+
+**User Story:** 선별된 각 릴스의 음성이 텍스트 대본으로 변환된다.
+
+**Acceptance Criteria:**
+- `audioUrl`(오디오 전용 mp4) fetch → OpenAI `whisper-1` multipart 업로드 (ffmpeg 불필요)
+- `language=ko`, `response_format=verbose_json` (segment 타임스탬프 포함)
+- GET 폴링당 최대 2개만 전사 (Vercel 타임아웃 예산), 멱등성(이미 전사된 릴스 재전사 금지)
+- 실패 릴스는 `[음성 인식 불가]` 표시로 격리, 429 재시도 (withRetry)
+
+**Dev Notes:**
+- 엔드포인트: `POST https://api.openai.com/v1/audio/transcriptions`, Node 내장 fetch/FormData
+- 비용: $0.006/분 (5개 릴스 ≈ $0.03)
+
+## R32: 구조 분석 + 재조립 (신규)
+
+**User Story:** 여러 릴스 대본의 공통 구조가 해부되고, 그 구조를 적용한 새 대본 초안이 생성된다.
+
+**Acceptance Criteria:**
+- Claude 호출 1회: segment 타임스탬프 기반으로 각 릴스의 훅 오프닝/전개 전환/클로징 구간 추출
+- 공통 구조 JSON: `{ hook, development, closing }`
+- 사용자 입력 키워드/브랜드 반영한 새 대본 초안 (훅/전개/클로징 + 타임라인 JSON)
+- 릴스 캡션/전사 텍스트는 "데이터"로만 취급 (프롬프트 인젝션 방지)
+
+**Dev Notes:**
+- `api/generate.js`의 시스템 프롬프트/`withRetry`/`parseApiResponse` 패턴 재사용
+
+## R33: job-status 폴링/비용 통제 (신규)
+
+**User Story:** 긴 파이프라인(크롤~분석)이 Vercel 타임아웃 없이 완료되고, 비용이 통제된다.
+
+**Acceptance Criteria:**
+- `POST /api/benchmark`(job 생성 + Apify run 시작, 즉시 응답) + `GET /api/benchmark?id=`(클라이언트 폴링)
+- KV 스테이지 머신: `crawling → transcribing → analyzing → done / failed`
+- 각 GET이 "완료된 다음 단계의 단위 작업"만 수행 → 단일 호출 300s 이내
+- `maxTotalChargeUsd=1`, KV TTL 24h, 폴링 120회 상한 후 `failed(timeout)`
+- jobId: `crypto.randomBytes(16)` 22자 base64url (128bit, review.js 패턴)
+
+**Dev Notes:**
+- 저장소: Vercel KV (`@vercel/kv` 3.0.0 기존 설치), 키 `benchmark:{jobId}`
+- 결과 요약만 저장 (전사 5개 + 분석 ≈ 50KB < KV 1MB)
+
+## R34: env 가이드 (신규)
+
+**User Story:** 새로 필요한 API 키가 환경변수 가이드에 문서화된다.
+
+**Acceptance Criteria:**
+- `APIFY_API_TOKEN` (Apify 가입 → Settings → API & Integration)
+- `OPENAI_API_KEY` (OpenAI Platform → API keys)
+- vercel.json `env` 블록 + ENVIRONMENT-GUIDE.md에 발급 방법/설정 위치/확인 curl 포함
+- `vercel.json`에 `functions["api/benchmark.js"].maxDuration = 300` 명시 (Vercel 타임아웃)
+
+**Dev Notes:**
+- 기존 KV env 2개(`KV_REST_API_URL`, `KV_REST_API_TOKEN`) 유지 + 신규 2개 추가
+
+## R35: 결과 렌더링 + 카피 (신규)
+
+**User Story:** 사용자가 (a) 릴스 리스트 (b) 전사 대본 (c) 구조 해부 (d) 새 대본을 보고 복사할 수 있다.
+
+**Acceptance Criteria:**
+- 진행 스테이지 표시 (크롤링→전사→분석→완료 스테퍼 + 한국어 상태 텍스트)
+- done 시 4종 결과 렌더링: (a) 바이럴 릴스 리스트 카드(조회수/좋아요/링크) (b) 전사 대본 (c) 구조 해부 카드 (d) 새 대본 초안
+- 각 섹션 카피 버튼 (navigator.clipboard, video-ui.js 패턴)
+- failed/timeout → 한국어 오류 + "다시 시도" 버튼, 폴링 중 탭 이탈 시 clearInterval
+
+**Dev Notes:**
+- `benchmark-analyzer.js` 한 파일에 UI+폴링+렌더링 응집 (RESEARCH §4-3)

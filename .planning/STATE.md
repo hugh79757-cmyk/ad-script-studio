@@ -5,9 +5,9 @@
 | Field | Value |
 |-------|-------|
 | Version | v1 |
-| Phases | 6 (Phase 1~6) |
-| Current Phase | Phase 6 완료 (Milestone v1 완료) |
-| Status | Phase 1 완료, Phase 2 완료, Phase 3 완료, Phase 4 완료, Phase 5 완료, Phase 6 완료 |
+| Phases | 7 (Phase 1~7) |
+| Current Phase | Phase 7 Wave 1 (backend benchmark API) 진행 중 |
+| Status | Phase 1~6 완료, Phase 7 Wave 1(api/benchmark.js) 구현 완료 — 실 API E2E는 키 체크포인트 대기 |
 
 ## Milestone v1 Summary
 
@@ -68,14 +68,16 @@
 
 ## Next Actions
 
-1. Vercel 대시보드에서 `ANTHROPIC_API_KEY` 환경변수(Secret) 설정
-2. `vercel --prod`로 프로덕션 배포
-3. 배포 후 브라우저에서 `E2E_TEST.runAll()` 실행하여 전체 플로우 검증
-4. Milestone v1 회고 (RETROSPECTIVE.md 생성)
+1. **[체크포인트] 사용자 수동:** `APIFY_API_TOKEN`(Apify 가입 → Settings → API & Integration), `OPENAI_API_KEY`(OpenAI Platform → API keys) 발급/설정 — .env.local + Vercel env (Production/Preview/Development)
+2. 키 확인 후: Wave 1 실 API curl E2E (POST /api/benchmark → GET 폴링 stage 전이 → 전사/분석 실동작)
+3. Wave 2: `benchmark-analyzer.js` (벤치마킹 탭 UI + 폴링 + 렌더링), index.html 탭 버튼/컨테이너, state-manager.js 최소 확장, style.css 추가
+4. Wave 3: vercel.json `maxDuration: 300` + env 블록(APIFY/OPENAI), ENVIRONMENT-GUIDE.md 갱신
+5. Milestone v1 회고 (RETROSPECTIVE.md 생성)
 
 ## Git History
 
 ```
+1dcfc92 feat(7-01): add benchmark API — POST job + GET polling KV stage machine
 0e6a6a2 feat(6-02): E2E 테스트 + 배포 스크립트 + 환경변수 가이드
 6493f74 docs(06-1): complete state management plan — SUMMARY + STATE update
 6334855 feat(06-1): add '2번으로 보내기' button + initTabPersistence to DOMContentLoaded
@@ -115,3 +117,5 @@ dc4852d docs: initialize GSD planning for AD SCRIPT STUDIO
 | v1-phase5-done | 2026-07-31 | Phase 5 완료: app.js 탭 전환 로직 추가, index.html 탭 UI + 비디오 컨테이너 추가, style.css 탭+비디오 스타일 추가. 영상 소스 생성기 탭 전환 동작. |
 | v1-phase6-wave1 | 2026-07-31 | Phase 6 Wave 1 완료: state-manager.js 탭 상태 관리(tabState, saveProposalResults, transferToVideoGenerator, switchTab, initTabPersistence), app.js "2번으로 보내기" 버튼 추가. 제안서→영상 소스 생성기 연결 완료. |
 | v1-phase6-done | 2026-07-31 | Phase 6 완료 (Milestone v1 완료): test-e2e.js (E2E 테스트), package.json (배포 스크립트), deploy.sh (자동화 배포), ENVIRONMENT-GUIDE.md (환경변수 가이드) 생성. 두 도구 연결 + 통합 테스트 + 배포 인프라 구축 완료. |
+| v1-phase7-plan | 2026-08-01 | Phase 7 플랜 생성: 벤치마킹 대본 분석기 (R28~R35 신규 추가, ROADMAP 반영). Wave 1(backend API)/Wave 2(frontend 탭)/Wave 3(config/docs) 구성. |
+| v1-phase7-wave1 | 2026-08-01 | Phase 7 Wave 1 완료: api/benchmark.js (KV 스테이지 머신 — POST job 생성 + Apify run 시작 / GET 폴링 crawling→transcribing→analyzing→done, 서버 강제 비용 상한). 오프라인 검증 통과 (11 unit groups + 82 inline assertions). 실 API E2E는 사용자 키 체크포인트 후 진행. |
