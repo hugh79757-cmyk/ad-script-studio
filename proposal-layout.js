@@ -29,14 +29,15 @@ const PROPOSAL_LAYOUT = {
     right: 20
   },
   
-  // 색상 팔레트
+  // 색상 팔레트 (라이트 테마 — 2026-08-01 전환: 다크 테마용 밝은 텍스트가 흰 배경에
+  // 렌더링되어 가독성이 떨어지는 문제 수정. 흰 배경 + 어두운 텍스트로 통일)
   colors: {
-    background: { r: 26, g: 26, b: 26 },      // 다크 배경
-    cardBackground: { r: 45, g: 45, b: 45 },   // 카드 배경
-    textPrimary: { r: 224, g: 224, b: 224 },   // 메인 텍스트
-    textSecondary: { r: 150, g: 150, b: 150 }, // 보조 텍스트
-    accent: { r: 100, g: 180, b: 255 },        // 강조 색상
-    divider: { r: 80, g: 80, b: 80 }           // 구분선
+    background: { r: 255, g: 255, b: 255 },    // 흰 배경
+    cardBackground: { r: 245, g: 245, b: 245 }, // 밝은 카드 배경
+    textPrimary: { r: 51, g: 51, b: 51 },       // 진한 회색 (본문 — 가독성 최우선)
+    textSecondary: { r: 120, g: 120, b: 120 },  // 중간 회색 (보조 텍스트)
+    accent: { r: 37, g: 99, b: 235 },           // 블루 강조
+    divider: { r: 200, g: 200, b: 200 }         // 밝은 구분선
   },
   
   // 폰트 크기

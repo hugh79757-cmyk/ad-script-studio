@@ -86,31 +86,31 @@ async function downloadProposalPDF(data, state, scenes, rationale, principles) {
  * @param {Object} state - appState 객체
  */
 function renderCoverPage(doc, state) {
-  // 배경색 (다크테마)
-  doc.setFillColor(26, 26, 26);
+  // 배경색 (라이트 테마 — 2026-08-01 전환: 다크 배경 제거, 흰 배경 + 어두운 텍스트)
+  doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, 210, 297, 'F');
   
-  // 로고 영역
-  doc.setFillColor(45, 45, 45);
+  // 로고 영역 (밝은 회색 카드)
+  doc.setFillColor(245, 245, 245);
   doc.roundedRect(20, 20, 170, 30, 3, 3, 'F');
-  doc.setTextColor(224, 224, 224);
+  doc.setTextColor(51, 51, 51);
   doc.setFontSize(14);
   doc.text('AD SCRIPT STUDIO', 105, 38, { align: 'center' });
   
   // 제목
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(17, 17, 17);
   doc.setFontSize(28);
   doc.text('광고 기획안', 105, 100, { align: 'center' });
   
   // 브랜드명 + 제품명
   doc.setFontSize(16);
-  doc.setTextColor(200, 200, 200);
+  doc.setTextColor(80, 80, 80);
   doc.text(state.brandName || '브랜드명', 105, 120, { align: 'center' });
   doc.text(state.productName || '제품명', 105, 130, { align: 'center' });
   
   // 날짜
   doc.setFontSize(12);
-  doc.setTextColor(150, 150, 150);
+  doc.setTextColor(120, 120, 120);
   const today = new Date().toLocaleDateString('ko-KR', { 
     year: 'numeric', month: 'long', day: 'numeric' 
   });
@@ -118,12 +118,13 @@ function renderCoverPage(doc, state) {
   
   // 하단 슬로건
   doc.setFontSize(10);
+  doc.setTextColor(80, 80, 80);
   doc.text('감이 아니라 논리로 만든 제안서', 105, 200, { align: 'center' });
   
   // 브랜드 신뢰 요소 (있는 경우)
   if (state.trustFactors && state.trustFactors.length > 0) {
     doc.setFontSize(10);
-    doc.setTextColor(150, 150, 150);
+    doc.setTextColor(120, 120, 120);
     doc.text(state.trustFactors.join(' | '), 105, 220, { align: 'center' });
   }
 }
@@ -149,6 +150,8 @@ function renderStrategyAndRationale(doc, state, rationale) {
   const marginLeft = 20;
   const contentWidth = 170;
   
+  // 라이트 테마: 이전 페이지 색상 상속 방지를 위해 명시적으로 어두운 텍스트 설정
+  doc.setTextColor(17, 17, 17);
   doc.setFontSize(20);
   doc.setFont(undefined, 'bold');
   doc.text('전략 및 근거', marginLeft, 30);
@@ -209,6 +212,8 @@ function renderCreativeImplementation(doc, scenes, state) {
   const marginLeft = 20;
   const contentWidth = 170;
   
+  // 라이트 테마: 이전 페이지 색상 상속 방지를 위해 명시적으로 어두운 텍스트 설정
+  doc.setTextColor(17, 17, 17);
   doc.setFontSize(20);
   doc.setFont(undefined, 'bold');
   doc.text('구현된 크리에이티브', marginLeft, 30);
@@ -273,6 +278,8 @@ function renderPrinciplesAppendix(doc, principles, rationale) {
   const marginLeft = 20;
   const contentWidth = 170;
   
+  // 라이트 테마: 이전 페이지 색상 상속 방지를 위해 명시적으로 어두운 텍스트 설정
+  doc.setTextColor(17, 17, 17);
   doc.setFontSize(20);
   doc.setFont(undefined, 'bold');
   doc.text('부록: 마케팅 원칙 전체 리스트', marginLeft, 30);
