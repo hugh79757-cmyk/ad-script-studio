@@ -6,8 +6,8 @@
 |-------|-------|
 | Version | v1 |
 | Phases | 7 (Phase 1~7) |
-| Current Phase | Phase 7 Wave 1 (backend benchmark API) 진행 중 |
-| Status | Phase 1~6 완료, Phase 7 Wave 1(api/benchmark.js) 구현 완료 — 실 API E2E는 키 체크포인트 대기 |
+| Current Phase | Phase 7 Wave 3 (config/docs) 진행 중 — Wave 1·3 구현 완료, Wave 2(frontend 탭)는 병렬 Wave로 진행 중 |
+| Status | Phase 1~6 완료, Phase 7 Wave 1(api/benchmark.js)·Wave 3(vercel.json/ENVIRONMENT-GUIDE.md) 구현 완료 — 실 API E2E는 키 체크포인트 대기 |
 
 ## Milestone v1 Summary
 
@@ -63,7 +63,8 @@
 | test-e2e.js | [검증됨] | `test-e2e.js` — 브라우저 콘솔 E2E 테스트 (수동/자동 모드) |
 | package.json | [검증됨] | `package.json` — Vercel 배포 스크립트 |
 | deploy.sh | [검증됨] | `deploy.sh` — 자동화 배포 스크립트 |
-| ENVIRONMENT-GUIDE.md | [검증됨] | `ENVIRONMENT-GUIDE.md` — ANTHROPIC_API_KEY 설정 가이드 |
+| ENVIRONMENT-GUIDE.md | [검증됨] | `ENVIRONMENT-GUIDE.md` — ANTHROPIC/TAVILY/KV/APIFY/OPENAI 환경변수 설정 가이드 (Phase 7 Wave 3에서 APIFY/OPENAI 발급 방법·curl·비용 안내 추가) |
+| phase-07/03-config-docs-SUMMARY.md | [검증됨] | `.planning/phases/07-benchmark-analyzer/03-config-docs-SUMMARY.md` — Wave 3 요약 |
 | RETROSPECTIVE.md | 미생성 | — |
 
 ## Next Actions
@@ -71,12 +72,14 @@
 1. **[체크포인트] 사용자 수동:** `APIFY_API_TOKEN`(Apify 가입 → Settings → API & Integration), `OPENAI_API_KEY`(OpenAI Platform → API keys) 발급/설정 — .env.local + Vercel env (Production/Preview/Development)
 2. 키 확인 후: Wave 1 실 API curl E2E (POST /api/benchmark → GET 폴링 stage 전이 → 전사/분석 실동작)
 3. Wave 2: `benchmark-analyzer.js` (벤치마킹 탭 UI + 폴링 + 렌더링), index.html 탭 버튼/컨테이너, state-manager.js 최소 확장, style.css 추가
-4. Wave 3: vercel.json `maxDuration: 300` + env 블록(APIFY/OPENAI), ENVIRONMENT-GUIDE.md 갱신
+4. ~~Wave 3: vercel.json `maxDuration: 300` + env 블록(APIFY/OPENAI), ENVIRONMENT-GUIDE.md 갱신~~ → **완료 (2026-08-01, Wave 3 Plan: `03-config-docs.PLAN.md`)** — `vercel.json` functions `api/benchmark.js` maxDuration 300 + env 4개(기존 KV 2 + APIFY/OPENAI @-sentinel 2), `ENVIRONMENT-GUIDE.md` 발급 방법 2섹션·벤치마킹 curl·비용 안내·엔드포인트 표 2행 추가. 오프라인 검증 통과 (JSON 파싱 + grep). 실 배포 검증은 키 체크포인트 후.
 5. Milestone v1 회고 (RETROSPECTIVE.md 생성)
 
 ## Git History
 
 ```
+9306ebe docs(7-03): add APIFY/OPENAI env documentation to ENVIRONMENT-GUIDE
+cdfe74f chore(7-03): add benchmark maxDuration 300 + APIFY/OPENAI env entries
 1dcfc92 feat(7-01): add benchmark API — POST job + GET polling KV stage machine
 0e6a6a2 feat(6-02): E2E 테스트 + 배포 스크립트 + 환경변수 가이드
 6493f74 docs(06-1): complete state management plan — SUMMARY + STATE update
@@ -119,3 +122,4 @@ dc4852d docs: initialize GSD planning for AD SCRIPT STUDIO
 | v1-phase6-done | 2026-07-31 | Phase 6 완료 (Milestone v1 완료): test-e2e.js (E2E 테스트), package.json (배포 스크립트), deploy.sh (자동화 배포), ENVIRONMENT-GUIDE.md (환경변수 가이드) 생성. 두 도구 연결 + 통합 테스트 + 배포 인프라 구축 완료. |
 | v1-phase7-plan | 2026-08-01 | Phase 7 플랜 생성: 벤치마킹 대본 분석기 (R28~R35 신규 추가, ROADMAP 반영). Wave 1(backend API)/Wave 2(frontend 탭)/Wave 3(config/docs) 구성. |
 | v1-phase7-wave1 | 2026-08-01 | Phase 7 Wave 1 완료: api/benchmark.js (KV 스테이지 머신 — POST job 생성 + Apify run 시작 / GET 폴링 crawling→transcribing→analyzing→done, 서버 강제 비용 상한). 오프라인 검증 통과 (11 unit groups + 82 inline assertions). 실 API E2E는 사용자 키 체크포인트 후 진행. |
+| v1-phase7-wave3 | 2026-08-01 | Phase 7 Wave 3 완료: vercel.json functions.api/benchmark.js maxDuration 300 + env 블록 APIFY_API_TOKEN/OPENAI_API_KEY(@-sentinel) 추가(기존 KV 2개 보존), ENVIRONMENT-GUIDE.md 신규 환경변수 문서(발급 방법 2섹션·벤치마킹 API curl·비용 안내 \$0.13~0.16·상한 정책·엔드포인트 표 2행) 반영. 오프라인 검증 통과 (node JSON 파싱 + grep). 실 배포 검증은 키 체크포인트 후. |
