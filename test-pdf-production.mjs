@@ -85,12 +85,12 @@ const BASE_URL = process.env.BASE_URL || 'https://ad-script-studio.vercel.app';
     }
 
     // 제안서 생성
-    console.log('🔄 제안서 생성 중 (자동 모드, API 호출 — 최대 240초)...');
+    console.log('🔄 제안서 생성 중 (자동 모드, API 호출 — 최대 300초)...');
     await page.click('.generate-btn');
 
-    // 결과 대기 (최대 240초)
+    // 결과 대기 (최대 300초)
     let done = false;
-    for (let i = 0; i < 240; i++) {
+    for (let i = 0; i < 300; i++) {
       await page.waitForTimeout(1000);
       const strategyContent = await page.$eval('#strategy', el => el.innerText).catch(() => '');
       if (strategyContent.length > 500) {
@@ -102,7 +102,7 @@ const BASE_URL = process.env.BASE_URL || 'https://ad-script-studio.vercel.app';
         console.log(`  ⏳ 대기 중... ${i + 1}초 (내용 길이: ${strategyContent.length})`);
       }
     }
-    if (!done) throw new Error('제안서 생성 타임아웃 (240초)');
+    if (!done) throw new Error('제안서 생성 타임아웃 (300초)');
 
     const finalStrategy = await page.$eval('#strategy', el => el.innerText).catch(() => '');
     console.log(`📄 생성된 전략 내용 길이: ${finalStrategy.length}자`);

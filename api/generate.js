@@ -28,6 +28,23 @@ const ANALYSIS_PROVIDERS = [
 ];
 
 // ============================================================================
+// 전역 데드라인 / provider 타임아웃 상수 (2026-08-01 추가)
+// ============================================================================
+// 배경: fetch()에 타임아웃이 없어 AI provider가 hang되면 Vercel maxDuration(300s)까지
+// 무기한 대기 후 강제 종료됨 (실측: 프로덕션 E2E 1차 시도 240s에서 멈춤).
+// 반면 정상 성공 케이스도 75~126s가 걸리는 경우가 있어(느린 무료 티어 provider),
+// 고정된 짧은 타임아웃(예: 30s)은 정상 응답을 오탐으로 끊어 폴백 체인을 낭비한다.
+// → 남은 예산(remainingMs)과 provider별 상한(PER_PROVIDER_CAP_MS) 중 작은 값을
+//   각 fetch의 타임아웃으로 동적 적용한다.
+
+/** Vercel maxDuration=300s 기준, 여유분을 두어 260s까지 시도 */
+const GLOBAL_DEADLINE_MS = 260_000;
+/** 남은 예산이 이 값 미만이면 fetch를 시도하지 않고 즉시 다음 provider로 */
+const MIN_ATTEMPT_MS = 15_000;
+/** 한 provider가 아무리 느려도 이 값을 넘길 수 없음 (관찰된 정상 지연 최대 126s 여유분) */
+const PER_PROVIDER_CAP_MS = 150_000;
+
+// ============================================================================
 // 26 마케팅 원칙 (shortform-copywriting.md 기반)
 // ============================================================================
 
@@ -470,12 +487,33 @@ export default async function handler(req, res) {
   const userPrompt = generateUserPrompt(inputs, mode);
   
   // Provider 체인 호출 (무료 우선 폴백)
+  // 데드라인 로직 (2026-08-01): 전역 데드라인 대비 남은 예산을 계산해
+  // 각 provider fetch에 동적 타임아웃을 적용. 예산이 최소 임계값 미만이면
+  // fetch를 시도하지 않고 다음 provider로 넘어간다.
   let data;
   try {
+    const startTime = Date.now();
+    // 각 provider별 실패 원인 수집 (최종 에러 응답에 포함)
+    const providerFailures = [];
+    
     data = await withRetry(async () => {
       for (const provider of ANALYSIS_PROVIDERS) {
         const providerKey = process.env[provider.apiKeyEnv];
-        if (!providerKey) continue; // 키 없으면 다음 provider로
+        if (!providerKey) {
+          providerFailures.push({ provider: provider.name, cause: 'skipped-no-api-key' });
+          continue; // 키 없으면 다음 provider로
+        }
+        
+        // 남은 예산 계산
+        const remainingMs = GLOBAL_DEADLINE_MS - (Date.now() - startTime);
+        if (remainingMs < MIN_ATTEMPT_MS) {
+          providerFailures.push({ provider: provider.name, cause: `skipped-deadline (remainingMs=${remainingMs})` });
+          console.warn(`[api/generate.js] Provider ${provider.name} 스킵: 전역 데드라인 소진 (남은 예산 ${remainingMs}ms < ${MIN_ATTEMPT_MS}ms)`);
+          continue; // fetch 자체를 시도하지 않음
+        }
+        
+        // 동적 타임아웃: 남은 예산과 provider 상한 중 작은 값
+        const timeoutMs = Math.min(remainingMs, PER_PROVIDER_CAP_MS);
         
         try {
           const response = await fetch(`${provider.baseUrl}/chat/completions`, {
@@ -491,7 +529,9 @@ export default async function handler(req, res) {
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userPrompt }
               ]
-            })
+            }),
+            // 타임아웃: 남은 예산과 provider 상한 중 작은 값
+            signal: AbortSignal.timeout(timeoutMs)
           });
           
           if (response.ok) {
@@ -503,14 +543,25 @@ export default async function handler(req, res) {
           }
           
           // HTTP 에러인 경우 다음 provider 시도
-          console.warn(`[api/generate.js] Provider ${provider.name} 실패 (${response.status}), 다음 provider 시도`);
+          const bodyText = await response.text().catch(() => '');
+          providerFailures.push({ provider: provider.name, cause: `error status=${response.status}`, detail: bodyText.substring(0, 200) });
+          console.warn(`[api/generate.js] Provider ${provider.name} error status=${response.status}, 다음 provider 시도`);
         } catch (err) {
-          console.warn(`[api/generate.js] Provider ${provider.name} 네트워크 에러: ${err.message}, 다음 provider 시도`);
+          // 타임아웃(abort)과 실제 네트워크 에러 구분
+          if (err.name === 'TimeoutError' || err.name === 'AbortError' || (err.cause && err.cause.name === 'TimeoutError')) {
+            const elapsed = Date.now() - startTime;
+            providerFailures.push({ provider: provider.name, cause: `timeout after ${timeoutMs}ms (elapsed ${elapsed}ms)` });
+            console.warn(`[api/generate.js] Provider ${provider.name} timeout after ${timeoutMs}ms, 다음 provider 시도`);
+          } else {
+            providerFailures.push({ provider: provider.name, cause: `network error: ${err.message}` });
+            console.warn(`[api/generate.js] Provider ${provider.name} 네트워크 에러: ${err.message}, 다음 provider 시도`);
+          }
         }
       }
       
       // 모든 provider 실패
-      throw new Error('모든 분석 provider 실패');
+      const failureSummary = providerFailures.map(f => `${f.provider}=${f.cause}`).join(', ');
+      throw new Error(`모든 분석 provider 실패 (${failureSummary})`);
     });
     
     // API 에러 확인 (일부 provider가 error 필드 반환할 수 있음)
