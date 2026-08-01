@@ -146,9 +146,14 @@ function generatePDFGroundingTag(usedFields) {
 
 /**
  * TYPE_HOOK: 훅 작성 원칙 근거 생성
+ * @param {Object} principle - 원칙 객체
+ * @param {Object} inputs - 입력값 객체
+ * @param {string} brandName - 브랜드명
+ * @param {Function} [getReview] - 리뷰 선택 함수 (리뷰 커서 로테이션용).
+ *   없으면 기존처럼 inputs.reviews[0] 사용 (하위 호환)
  * @returns {{ reason: string, usedFields: Array, citations: Array }} 근거, 사용된 필드, 인용 출처
  */
-function generateHookRationale(principle, inputs, brandName) {
+function generateHookRationale(principle, inputs, brandName, getReview) {
   let reason = '';
   let usedFields = [];
   let citations = [];
@@ -156,37 +161,44 @@ function generateHookRationale(principle, inputs, brandName) {
   // 1. 타겟 기반 (필수)
   if (inputs.target) {
     usedFields.push('target');
+    // 조사 자동 결합 (이/가 → 받침 기반) — 버그 수정 2026-08-01
+    const targetJosa = getJosa(inputs.target, '이/가');
     const targetPhrases = {
-      '1-1': `${inputs.target}이/가 자주 겪는 문제를 언급하되 핵심 해결책은 숨겨 시청을 유지합니다`,
+      '1-1': `${inputs.target}${targetJosa} 자주 겪는 문제를 언급하되 핵심 해결책은 숨겨 시청을 유지합니다`,
       '1-2': `첫 3초 내에 ${inputs.target}의 시선을 사로잡기 위해 강렬한 메시지를 배치합니다`,
       '1-3': `${inputs.target}의 감정에 직접 호소하여 브랜드와의 유대감을 형성합니다`,
       '1-4': `${inputs.target}의 실제 경험을 스토리로 구성하여 자연스럽게 메시지를 전달합니다`,
-      '1-5': `${inputs.target}이 공감할 수 있는 상황을 제시하여 "나도 그렇다"는 반응을 유도합니다`,
+      '1-5': `${inputs.target}${targetJosa} 공감할 수 있는 상황을 제시하여 "나도 그렇다"는 반응을 유도합니다`,
       '1-6': `${inputs.target}에게 질문을 던져 스스로 생각하게 만들고 몰입도를 높입니다`,
-      '1-7': `${inputs.target}이 익숙한 비유를 통해 제품의 핵심 가치를 쉽게 전달합니다`,
+      '1-7': `${inputs.target}${targetJosa} 익숙한 비유를 통해 제품의 핵심 가치를 쉽게 전달합니다`,
       '1-8': `${inputs.target}의 마음을 움직이는 감동적인 요소를 삽입하여 기억에 남게 합니다`,
-      '1-9': `${inputs.target}이 모르던 제품의 비밀을 공개하는 듯한 호기심을 자극합니다`
+      '1-9': `${inputs.target}${targetJosa} 모르던 제품의 비밀을 공개하는 듯한 호기심을 자극합니다`
     };
     reason = targetPhrases[principle.id] || `${inputs.target}의 관심을 끌기 위해 필요합니다`;
   }
   
   // 2. 리뷰 기반 (선택) - 리뷰가 있을 때만 인용
+  // 버그 수정 (2026-08-01): 리뷰가 적을 때 같은 인용구가 반복 사용되지 않도록
+  // getReview() 커서로 사용 가능한 리뷰를 순환 선택한다.
   if (inputs.reviews && inputs.reviews.length > 0) {
     usedFields.push('reviews');
-    const reviewSnippet = inputs.reviews[0].substring(0, 25);
-    citations.push({ text: reviewSnippet, sourceField: 'reviews' });
-    const reviewPhrases = {
-      '1-1': `실제 리뷰에서 "${reviewSnippet}"라고 언급된 문제를 활용합니다`,
-      '1-2': `리뷰에서 반복되는 "${reviewSnippet}" 표현을 첫 훅에 적용합니다`,
-      '1-3': `고객 리뷰 "${reviewSnippet}"에서 느껴지는 감정을 강조합니다`,
-      '1-4': `리뷰 "${reviewSnippet}"를 바탕으로 고객 스토리를 구성합니다`,
-      '1-5': `"${reviewSnippet}"라고 말하는 고객의 공감대를 형성합니다`,
-      '1-6': `리뷰에서 발견된 "${reviewSnippet}" 고민을 질문으로 전환합니다`,
-      '1-8': `"${reviewSnippet}"라는 고객의 감동을 극대화합니다`,
-      '1-9': `리뷰에서 알게 된 "${reviewSnippet}" 비밀을 강조합니다`
-    };
-    if (reviewPhrases[principle.id]) {
-      reason += `. ${reviewPhrases[principle.id]}`;
+    const reviewText = getReview ? getReview() : inputs.reviews[0];
+    if (reviewText) {
+      const reviewSnippet = reviewText.substring(0, 25);
+      citations.push({ text: reviewSnippet, sourceField: 'reviews' });
+      const reviewPhrases = {
+        '1-1': `실제 리뷰에서 "${reviewSnippet}"라고 언급된 문제를 활용합니다`,
+        '1-2': `리뷰에서 반복되는 "${reviewSnippet}" 표현을 첫 훅에 적용합니다`,
+        '1-3': `고객 리뷰 "${reviewSnippet}"에서 느껴지는 감정을 강조합니다`,
+        '1-4': `리뷰 "${reviewSnippet}"${getJosa(reviewSnippet, '을/를')} 바탕으로 고객 스토리를 구성합니다`,
+        '1-5': `"${reviewSnippet}"라고 말하는 고객의 공감대를 형성합니다`,
+        '1-6': `리뷰에서 발견된 "${reviewSnippet}" 고민을 질문으로 전환합니다`,
+        '1-8': `"${reviewSnippet}"라는 고객의 감동을 극대화합니다`,
+        '1-9': `리뷰에서 알게 된 "${reviewSnippet}" 비밀을 강조합니다`
+      };
+      if (reviewPhrases[principle.id]) {
+        reason += `. ${reviewPhrases[principle.id]}`;
+      }
     }
   }
   
@@ -226,13 +238,15 @@ function generateCTARationale(principle, inputs, brandName) {
     usedFields.push('trustFactors');
     const trustText = inputs.trustFactors[0];
     citations.push({ text: trustText, sourceField: 'trustFactors' });
+    // 조사 자동 결합 (과/와 → 받침 기반) — 버그 수정 2026-08-01
+    const trustJosa = getJosa(trustText, '과/와');
     const trustPhrases = {
       '2-1': `신뢰 요소(${trustText})와 함께 희소성을 강조합니다`,
       '2-2': `${trustText} 같은 신뢰 요소를 제공하여 상호성을 강화합니다`,
       '2-3': `${trustText} 등 기존 신뢰를 바탕으로 추가 동의를 유도합니다`,
-      '2-4': `${trustText}을 활용한 전문가/유명인 권위를 형성합니다`,
+      '2-4': `${trustText}${getJosa(trustText, '을/를')} 활용한 전문가/유명인 권위를 형성합니다`,
       '2-6': `${trustText} 신뢰 요소와 함께 구체적 행동을 제시합니다`,
-      '3-2': `${trustText}과 같은 공식 인증/수상을 통해 권위를 강화합니다`
+      '3-2': `${trustText}${trustJosa} 같은 공식 인증/수상을 통해 권위를 강화합니다`
     };
     if (trustPhrases[principle.id]) {
       reason += (reason ? '. ' : '') + trustPhrases[principle.id];
@@ -254,9 +268,13 @@ function generateCTARationale(principle, inputs, brandName) {
 
 /**
  * TYPE_PSYCH: 심리 트리거 근거 생성
+ * @param {Object} principle - 원칙 객체
+ * @param {Object} inputs - 입력값 객체
+ * @param {string} brandName - 브랜드명
+ * @param {Function} [getReview] - 리뷰 선택 함수 (리뷰 커서 로테이션용)
  * @returns {{ reason: string, usedFields: Array, citations: Array }} 근거, 사용된 필드, 인용 출처
  */
-function generatePsychRationale(principle, inputs, brandName) {
+function generatePsychRationale(principle, inputs, brandName, getReview) {
   let reason = '';
   let usedFields = [];
   let citations = [];
@@ -266,8 +284,11 @@ function generatePsychRationale(principle, inputs, brandName) {
       if (inputs.reviews && inputs.reviews.length > 0) {
         usedFields.push('reviews');
         // 리뷰 개수는 파생된 값이므로 인용 목록에 포함하지 않음
-        // 대신 첫 번째 리뷰를 인용으로 포함
-        citations.push({ text: inputs.reviews[0], sourceField: 'reviews' });
+        // 대신 리뷰 커서로 선택된 리뷰를 인용으로 포함 (버그 수정 2026-08-01)
+        const reviewText = getReview ? getReview() : inputs.reviews[0];
+        if (reviewText) {
+          citations.push({ text: reviewText, sourceField: 'reviews' });
+        }
         reason = `실제 고객 ${inputs.reviews.length}건의 리뷰를 인용하여 사회적 증거를 형성합니다`;
       } else {
         reason = '';
@@ -278,7 +299,9 @@ function generatePsychRationale(principle, inputs, brandName) {
       if (inputs.trustFactors && inputs.trustFactors.length > 0) {
         usedFields.push('trustFactors');
         citations.push({ text: inputs.trustFactors[0], sourceField: 'trustFactors' });
-        reason = `${inputs.trustFactors[0]}과 같은 공식 인증을 통해 전문성과 권위를 강화합니다`;
+        // 조사 자동 결합 (과/와) — 버그 수정 2026-08-01
+        const trustText = inputs.trustFactors[0];
+        reason = `${trustText}${getJosa(trustText, '과/와')} 같은 공식 인증을 통해 전문성과 권위를 강화합니다`;
       } else {
         reason = '';
       }
@@ -311,7 +334,8 @@ function generatePsychRationale(principle, inputs, brandName) {
       if (inputs.concept) {
         usedFields.push('concept');
         citations.push({ text: inputs.concept, sourceField: 'concept' });
-        reason = `"${inputs.concept}"라는 핵심 컨셉을 3가지 이내로 단순화합니다`;
+        // 관형격 조사 자동 결합 (버그 수정 2026-08-01): "크림"라는 → "크림"이라는
+        reason = `"${inputs.concept}"${getJosa(inputs.concept, '이라는/라는')} 핵심 컨셉을 3가지 이내로 단순화합니다`;
       } else {
         reason = '';
       }
@@ -321,7 +345,8 @@ function generatePsychRationale(principle, inputs, brandName) {
       if (inputs.concept) {
         usedFields.push('concept');
         citations.push({ text: inputs.concept, sourceField: 'concept' });
-        reason = `"${inputs.concept}"를 시각적 요소로 강조하여 주목도를 높입니다`;
+        // 을/를 자동 결합 (버그 수정 2026-08-01): "크림"를 → "크림"을
+        reason = `"${inputs.concept}"${getJosa(inputs.concept, '을/를')} 시각적 요소로 강조하여 주목도를 높입니다`;
       } else {
         reason = '';
       }
@@ -331,7 +356,8 @@ function generatePsychRationale(principle, inputs, brandName) {
       if (inputs.concept) {
         usedFields.push('concept');
         citations.push({ text: inputs.concept, sourceField: 'concept' });
-        reason = `"${inputs.concept}"를 반복과 리듬으로 기억도를 높입니다`;
+        // 을/를 자동 결합 (버그 수정 2026-08-01)
+        reason = `"${inputs.concept}"${getJosa(inputs.concept, '을/를')} 반복과 리듬으로 기억도를 높입니다`;
       } else {
         reason = '';
       }
@@ -350,9 +376,14 @@ function generatePsychRationale(principle, inputs, brandName) {
     case '3-9': // 리뷰 표현 인용
       if (inputs.reviews && inputs.reviews.length > 0) {
         usedFields.push('reviews');
-        const directQuote = inputs.reviews[0];
-        citations.push({ text: directQuote, sourceField: 'reviews' });
-        reason = `고객이 실제로 "${directQuote}"라고 표현했기 때문에 이 문구를 대본에 그대로 살렸습니다`;
+        // 리뷰 커서로 선택 (버그 수정 2026-08-01: 동일 리뷰 반복 사용 완화)
+        const directQuote = getReview ? getReview() : inputs.reviews[0];
+        if (directQuote) {
+          citations.push({ text: directQuote, sourceField: 'reviews' });
+          reason = `고객이 실제로 "${directQuote}"라고 표현했기 때문에 이 문구를 대본에 그대로 살렸습니다`;
+        } else {
+          reason = '';
+        }
       } else {
         reason = '';
       }
@@ -362,7 +393,8 @@ function generatePsychRationale(principle, inputs, brandName) {
       if (inputs.target) {
         usedFields.push('target');
         citations.push({ text: inputs.target, sourceField: 'target' });
-        reason = `${inputs.target}이 공감할 수 있는 유머 요소를 삽입하여 친근감을 형성합니다`;
+        // 조사 자동 결합 (이/가) — 버그 수정 2026-08-01
+        reason = `${inputs.target}${getJosa(inputs.target, '이/가')} 공감할 수 있는 유머 요소를 삽입하여 친근감을 형성합니다`;
       } else {
         reason = '';
       }
@@ -409,6 +441,19 @@ function generateRationaleManually(state, principles = PRINCIPLES) {
   const brandName = state.brandName || '브랜드';
   const generated = [];
   const skipped = [];
+
+  // 리뷰 커서 로테이션 (버그 수정 2026-08-01):
+  // 리뷰가 적을 때 같은 인용구가 여러 원칙에 반복 사용되는 것을 완화.
+  // 각 원칙이 리뷰를 소비할 때마다 커서가 다음 리뷰로 이동한다.
+  // 리뷰가 1건뿐이면 어쩔 수 없이 재사용되지만, 2건 이상이면 골고루 분산된다.
+  let reviewCursor = 0;
+  const getReview = () => {
+    const reviews = inputs.reviews;
+    if (!reviews || reviews.length === 0) return '';
+    const review = reviews[reviewCursor % reviews.length];
+    reviewCursor++;
+    return review;
+  };
   
   principles.forEach(principle => {
     // 그라운딩 규칙 3: 필수 입력값 확인 - 없으면 완전히 제외
@@ -437,13 +482,13 @@ function generateRationaleManually(state, principles = PRINCIPLES) {
     
     switch (principle.type) {
       case 'TYPE_HOOK':
-        result = generateHookRationale(principle, inputs, brandName);
+        result = generateHookRationale(principle, inputs, brandName, getReview);
         break;
       case 'TYPE_CTA':
         result = generateCTARationale(principle, inputs, brandName);
         break;
       case 'TYPE_PSYCH':
-        result = generatePsychRationale(principle, inputs, brandName);
+        result = generatePsychRationale(principle, inputs, brandName, getReview);
         break;
       default:
         result.reason = `${brandName}의 메시지를 효과적으로 전달하기 위해 적용되었습니다`;

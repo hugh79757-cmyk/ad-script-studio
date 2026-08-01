@@ -105,6 +105,13 @@ const fs = require('fs');
 const path = require('path');
 const engineSrc = fs.readFileSync(path.join(__dirname, 'rationale-engine.js'), 'utf8');
 
+// korean-utils.js 의존성 주입 (2026-08-01):
+// rationale-engine.js가 이제 getJosa()를 참조하므로 eval 컨텍스트에서
+// 사용할 수 있도록 모듈 스코프에 정의한다. 브라우저에서는
+// <script src="korean-utils.js"> 순서 로드로 동일하게 보장된다.
+const ku = require('./korean-utils.js');
+const getJosa = ku.getJosa;
+
 const safeSrc = engineSrc.replace(
   /if\s*\(typeof module[\s\S]*?module\.exports\s*=\s*\{[\s\S]*?\}\s*;\s*\}/m,
   '/* module.exports skipped for eval */'

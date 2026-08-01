@@ -99,31 +99,68 @@ const SCRIPT_TEMPLATE = {
 /**
  * 플레이스홀더 문자열을 appState 값으로 대체한다.
  *
+ * 버그 수정 (2026-08-01):
+ * - {keyBenefit}, {painPoint}, {resultStat}, {slogan}은 실제 appState에 없는
+ *   필드라 항상 fallback 문자열("핵심 혜택", "고민거리", "만족한 결과")이
+ *   그대로 출력됨 → 실제 필드로 매핑 (keyBenefit→concept, painPoint→리뷰,
+ *   resultStat→자연스러운 기본 문구, slogan→concept)
+ * - 하드코딩 조사("으로", "을")가 받침을 무시해 "라네즈으로" 같은 오류 발생
+ *   → korean-utils.js의 getJosa()로 받침 기반 자동 결합
+ * - 타겟/리뷰 입력값의 # 같은 특수문자를 cleanKoreanText()로 정제
+ *
  * @param {string}  template   - 플레이스홀더를 포함한 템플릿 문자열
  * @param {Object}  state      - appState 객체
  * @param {string}  state.brandName         - 브랜드명
  * @param {string}  state.productName       - 제품명
  * @param {string}  state.target            - 타겟 고객 설명
- * @param {string}  state.keyBenefit        - 핵심 혜택
- * @param {string}  state.trustFactor       - 신뢰 요소(인증, 후기 등)
- * @param {string}  state.painPoint         - 타겟의 고통/고민 포인트
- * @param {string}  state.resultStat        - 결과 수치 (예: "91% 만족도")
- * @param {string}  state.slogan            - 슬로건
+ * @param {string}  state.concept           - 컨셉/핵심 혜택 (keyBenefit 대체)
+ * @param {string[]} state.trustFactors     - 신뢰 요소 목록
+ * @param {string[]} state.reviewExcerpts   - 리뷰 발췌 (painPoint 대체)
  * @returns {string} 플레이스홀더가 대체된 문자열
  */
 function replacePlaceholders(template, state) {
-  return template
-    .replace(/\{brandName\}/g, state.brandName || '브랜드명')
-    .replace(/\{productName\}/g, state.productName || '제품명')
-    .replace(/\{target\}/g, state.target || '고객')
-    .replace(/\{keyBenefit\}/g, state.keyBenefit || '핵심 혜택')
-    .replace(/\{trustFactor\}/g,
-      Array.isArray(state.trustFactors) && state.trustFactors.length > 0
-        ? state.trustFactors[0]
-        : '검증된 신뢰')
-    .replace(/\{painPoint\}/g, state.painPoint || '고민거리')
-    .replace(/\{resultStat\}/g, state.resultStat || '만족한 결과')
-    .replace(/\{slogan\}/g, state.slogan || '더 나은 내일을 위해');
+  const brand = state.brandName || '브랜드명';
+  const product = state.productName || '제품명';
+  const target = cleanKoreanText(state.target) || '고객';
+
+  // keyBenefit: 실제 필드가 없어 concept(핵심 컨셉)를 핵심 혜택으로 사용
+  const keyBenefit = state.concept || '기대 이상의 만족';
+
+  // painPoint: 실제 필드가 없어 리뷰 첫 건을 "…라는 고민" 형태로 사용.
+  // 리뷰가 없으면 자연스러운 기본 문구
+  const painPoint = (Array.isArray(state.reviewExcerpts) && state.reviewExcerpts.length > 0)
+    ? `"${cleanKoreanText(state.reviewExcerpts[0])}"라는 고민`
+    : '해결되지 않은 일상의 불편함';
+
+  // resultStat: 실제 필드가 없어 수치 보장 없는 자연스러운 기본 문구
+  const resultStat = '만족스러운 변화';
+
+  // slogan: 실제 필드가 없어 concept를 슬로건 자리로 활용, 없으면 기본 문구
+  const slogan = state.concept || '더 나은 내일을 위해';
+
+  const trustFactor = (Array.isArray(state.trustFactors) && state.trustFactors.length > 0)
+    ? state.trustFactors[0]
+    : '검증된 신뢰';
+
+  // 1) 조사가 붙은 패턴을 먼저 처리 (받침 기반 자동 결합)
+  let out = template
+    .replace(/\{brandName\}으로/g, `${brand}${getJosa(brand, '로/으로')}`)
+    .replace(/\{productName\}은/g, `${product}${getJosa(product, '은/는')}`)
+    .replace(/\{productName\}을/g, `${product}${getJosa(product, '을/를')}`)
+    .replace(/\{keyBenefit\}를/g, `${keyBenefit}${getJosa(keyBenefit, '을/를')}`)
+    .replace(/\{resultStat\}을/g, `${resultStat}${getJosa(resultStat, '을/를')}`)
+    .replace(/\{trustFactor\}로/g, `${trustFactor}${getJosa(trustFactor, '로/으로')}`);
+
+  // 2) 일반 플레이스홀더 처리
+  return out
+    .replace(/\{brandName\}/g, brand)
+    .replace(/\{productName\}/g, product)
+    .replace(/\{target\}/g, target)
+    .replace(/\{keyBenefit\}/g, keyBenefit)
+    .replace(/\{trustFactor\}/g, trustFactor)
+    .replace(/\{painPoint\}/g, painPoint)
+    .replace(/\{resultStat\}/g, resultStat)
+    .replace(/\{slogan\}/g, slogan);
 }
 
 /**

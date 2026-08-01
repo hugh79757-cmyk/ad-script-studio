@@ -49,13 +49,25 @@ function generateExpectedEffectsData(rationale) {
   data.effects = defaultEffects;
   
   // 적용된 원칙 효과 추가 (근거가 있는 경우)
+  // 버그 수정 (2026-08-01):
+  // - item.reason(원칙 적용 근거)을 그대로 사용하면 3페이지(전략 및 근거)와
+  //   5페이지(기대 효과)에 동일한 "적용 근거" 문단이 중복 출력됨
+  // - 원칙 설명을 반복하지 않고, 원칙 유형별 "효과"에 대한 새 문장만 생성
+  const EFFECT_BY_TYPE = {
+    TYPE_HOOK: '시청 초반 이탈을 줄여 메시지 전달률을 높입니다',
+    TYPE_CTA: '전환 의도를 구체적인 행동으로 연결합니다',
+    TYPE_PSYCH: '타겟의 심리적 공감대를 형성해 설득력을 높입니다'
+  };
+  
   if (rationale && rationale.length > 0) {
     rationale.slice(0, 3).forEach(item => {
       // 이미 있는 원칙은 건너뛰기
       if (!data.effects.find(e => e.principle === item.principleName)) {
+        const effectSentence = EFFECT_BY_TYPE[item.type]
+          || '메시지의 설득력을 높입니다';
         data.effects.push({
           principle: item.principleName,
-          effect: item.reason,
+          effect: `${item.principleName} 원칙을 적용해 ${effectSentence}`,
           source: '이 제안서 적용 원칙'
         });
       }

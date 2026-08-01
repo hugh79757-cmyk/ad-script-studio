@@ -18,16 +18,40 @@ function generateProblemDiagnosisData(state) {
   };
   
   // 1. 타겟 기반 문제
-  const target = state.target || '고객';
-  const competitor = state.competitorInfo || '해결되지 않은 문제';
+  // 버그 수정 (2026-08-01):
+  // - "#{target}" 처럼 # 특수문자가 문장에 그대로 노출되던 문제 → cleanKoreanText() 정제
+  // - "가장 고민하는 것은 {경쟁사명}입니다" 처럼 경쟁사 필드가 고민거리 자리에
+  //   잘못 들어가던 문제 → 경쟁사는 별도 '차별화' 항목으로 분리, 고민 문장은
+  //   리뷰(있으면) 또는 자연스러운 기본 문구로 구성
+  const target = cleanKoreanText(state.target) || '고객';
+  const competitor = state.competitorInfo ? cleanKoreanText(state.competitorInfo) : '';
+  
+  // 핵심 문제: 리뷰가 있으면 리뷰 기반 고민, 없으면 자연스러운 기본 문구
+  let problemContent;
+  if (state.reviewExcerpts && state.reviewExcerpts.length > 0) {
+    const reviewText = cleanKoreanText(state.reviewExcerpts[0]);
+    problemContent = `${target}들이 가장 고민하는 것은 "${reviewText}" 같은 반복되는 불편함입니다.`;
+  } else {
+    problemContent = `${target}들이 가장 고민하는 것은 해결되지 않은 일상의 불편함입니다.`;
+  }
   
   data.problems.push({
     type: 'target',
     title: '타겟 고객이 겪는 핵심 문제',
-    content: `#${target}들이 가장 고민하는 것은 ${competitor}입니다.`
+    content: problemContent
   });
   
-  // 2. 리뷰 기반 문제 (있는 경우)
+  // 2. 경쟁사 차별화 (별도 항목 — 고민 문장에 잘못 들어가지 않도록 분리)
+  if (competitor) {
+    data.problems.push({
+      type: 'competitor',
+      title: '경쟁 제품과의 차별화 필요',
+      // 과/와 조사 자동 결합 (버그 수정 2026-08-01): "크림와" → "크림과"
+      content: `${competitor}${getJosa(competitor, '과/와')} 비교했을 때, 차별화된 가치 전달이 필요합니다.`
+    });
+  }
+  
+  // 3. 리뷰 기반 문제 (있는 경우)
   if (state.reviewExcerpts && state.reviewExcerpts.length > 0) {
     data.reviews = state.reviewExcerpts.slice(0, 3).map(review => ({
       original: review,
@@ -41,16 +65,16 @@ function generateProblemDiagnosisData(state) {
     });
   }
   
-  // 3. 가격/구매 장벽
+  // 4. 가격/구매 장벽
   if (state.priceRange) {
     data.problems.push({
       type: 'price',
       title: '구매 장벽',
-      content: `${state.priceRange} 가격대에서 첫 구매 망설임이 발생합니다.`
+      content: `${cleanKoreanText(state.priceRange)} 가격대에서 첫 구매 망설임이 발생합니다.`
     });
   }
   
-  // 4. 문제의 비용
+  // 5. 문제의 비용
   data.cost = '적절한 마케팅 없이는 경쟁 제품에 고객을 빼앗기며, 브랜드 인지는 점차 낮아집니다.';
   
   return data;

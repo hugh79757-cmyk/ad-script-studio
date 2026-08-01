@@ -169,7 +169,8 @@ function renderStrategyAndRationale(doc, state, rationale) {
   
   doc.setFont(undefined, 'normal');
   const conceptText = state.concept || '제품의 핵심 가치';
-  const strategyText = `"${conceptText}"를 중심으로, ${state.target || '타겟'}의 공감을 끌어내는 스토리텔링 전략을 적용합니다.`;
+  // 을/를 자동 결합 (버그 수정 2026-08-01): "크림"를 → "크림"을
+  const strategyText = `"${conceptText}"${getJosa(conceptText, '을/를')} 중심으로, ${state.target || '타겟'}의 공감을 끌어내는 스토리텔링 전략을 적용합니다.`;
   const strategyLines = doc.splitTextToSize(strategyText, contentWidth);
   doc.text(strategyLines, marginLeft, y);
   y += strategyLines.length * 6 + 10;
