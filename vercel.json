@@ -42,6 +42,13 @@
   ],
   "env": {
     "KV_REST_API_URL": "@kv-rest-api-url",
-    "KV_REST_API_TOKEN": "@kv-rest-api-token"
+    "KV_REST_API_TOKEN": "@kv-rest-api-token",
+    "APIFY_API_TOKEN": "@apify-api-token",
+    "OPENAI_API_KEY": "@openai-api-key"
+  },
+  "functions": {
+    "api/benchmark.js": {
+      "maxDuration": 300
+    }
   }
 }
