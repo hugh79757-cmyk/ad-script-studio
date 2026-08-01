@@ -3,8 +3,6 @@
   "version": "1.0.0",
   "description": "전략 제안서 생성기 + 영상 소스 생성기",
   "scripts": {
-    "dev": "vercel dev",
-    "build": "echo 'Static site - no build needed'",
     "deploy": "vercel --prod",
     "deploy:preview": "vercel",
     "test:e2e": "open index.html && echo 'Run E2E_TEST.runAll() in browser console'",

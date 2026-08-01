@@ -14,7 +14,7 @@
 1. **크롤링:** Apify 공식 `apify/instagram-reel-scraper`로 해당 계정의 릴스 크롤링 (resultsLimit 30)
 2. **필터링:** 조회수(`videoViewCount >= 50,000`) 기준 바이럴 릴스 상위 최대 5개 선별
 3. **전사:** OpenAI Whisper(`whisper-1`, `language=ko`)로 음성 → 대본 변환
-4. **분석:** 여러 릴스 대본의 공통 구조(훅 오프닝 / 전개 전환 / 클로징)를 Claude로 해부
+4. **분석:** 여러 릴스 대본의 공통 구조(훅 오프닝 / 전개 전환 / 클로징)를 **무료 우선 5단계 폴백(NVIDIA NIM → OpenCode Zen 3종 → 유료 DeepSeek)**으로 해부
 5. **재조립:** 분석된 구조를 템플릿으로 삼아 새 키워드/브랜드로 새 대본 초안 생성
 
 아키텍처는 RESEARCH.md의 **Option B**를 채택한다:
@@ -90,7 +90,7 @@
    |-----------|-------------------|------------------------|
    | `crawling` | Apify run 상태 1회 확인 (`GET /v2/actor-runs/{runId}`) → SUCCEEDED면 dataset fetch + 바이럴 필터 + 상위 5개 선정 → `transcribing`으로 전환 | run을 기다리지 않음 (RUNNING이면 상태만 응답, 다음 GET에 재확인) |
    | `transcribing` | 전사 안 된 릴스 중 **최대 2개**만 Whisper 전사 (audioUrl fetch + 업로드) → transcripts 저장 | 한 GET에서 5개 전부 전사하지 않음 (300s 예산) |
-   | `analyzing` | Claude 1회 호출 (구조 분석 + 새 대본) → `done`으로 전환 | 분석을 여러 번 재실행하지 않음 |
+   | `analyzing` | **무료 우선 5단계 폴백 1회 호출** (NVIDIA NIM → OpenCode Zen 3종 → 유료 DeepSeek) → `done`으로 전환 | 분석을 여러 번 재실행하지 않음 |
    | `done` / `failed` | 축적된 결과 응답 | 새 작업 수행 안 함 |
 
    - 전사 단계에서 "이번 GET이 전사할 릴스 선택"은 job의 `transcripts` 배열 기준: 이미 전사된 릴스는 건너뛰고(멱등성) 아직 전사 안 된 릴스 중 앞에서부터 최대 2개를 선택한다.
@@ -111,11 +111,11 @@
       - 응답 `{ text, segments:[{start,end,text}] }` 저장 → `generate.js`의 `withRetry` 패턴으로 429/오류 재시도, 개별 실패 릴스는 `[음성 인식 불가]` 표시로 격리
       - **멱등성**: 이미 `transcripts`에 있는 릴스는 재전사 금지 (KV read-modify-write)
       - 전부 완료되면 `stage=analyzing`
-   - `analyzing` (R32):
-     - Claude 1회 호출 — `generate.js` 패턴 재사용 (`withRetry`, `parseApiResponse`)
-     - 시스템 프롬프트: 역할 고정(숏폼 구조 분석가), 릴스 캡션/전사 텍스트는 "데이터"로만 취급 (프롬프트 인젝션 방지)
-     - **segment 타임스탬프 기반 구조 해부**: 각 릴스의 훅 오프닝(0~3초대)/전개 전환/클로징 구간 추출 → 공통 구조 JSON `{ hook, development, closing }`
-     - **새 대본 재조립**: `brandName`/`keyword` 입력값을 반영한 새 대본 초안 (JSON 구조: 훅/전개/클로징 + 타임라인) → `result` 저장 → `stage=done`
+- `analyzing` (R32):
+      - **무료 우선 5단계 폴백 1회 호출** (NVIDIA NIM `nvidia/nemotron-3-ultra-550b-a55b` → OpenCode Zen `nemotron-3-ultra-free` / `deepseek-v4-flash-free` / `mimo-v2.5-free` → 유료 DeepSeek `deepseek-v4-flash`) — `generate.js` 패턴 재사용 (`withRetry`, `parseApiResponse`)
+      - 시스템 프롬프트: 역할 고정(숏폼 구조 분석가), 릴스 캡션/전사 텍스트는 "데이터"로만 취급 (프롬프트 인젝션 방지)
+      - **segment 타임스탬프 기반 구조 해부**: 각 릴스의 훅 오프닝(0~3초대)/전개 전환/클로징 구간 추출 → 공통 구조 JSON `{ hook, development, closing }`
+      - **새 대본 재조립**: `brandName`/`keyword` 입력값을 반영한 새 대본 초안 (JSON 구조: 훅/전개/클로징 + 타임라인) → `result` 저장 → `stage=done`
    - `done` / `failed`: 응답에 축적 데이터 포함 `{ jobId, status, stage, reels?, transcripts?, result?, error? }`
    - 폴링 상한 초과(15분) → `stage=failed(timeout)`
 
