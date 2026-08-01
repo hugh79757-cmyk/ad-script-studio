@@ -120,6 +120,9 @@
   <button class="tool-tab" data-tab="video">
     영상 소스 생성기
   </button>
+  <button class="tool-tab" data-tab="benchmark">
+    벤치마킹 분석기
+  </button>
 </div>
 
 <!-- 도구 컨텐츠 -->
@@ -156,6 +159,13 @@
       <!-- video-ui.js에서 렌더링 -->
     </div>
   </div>
+
+  <!-- 벤치마킹 분석기 -->
+  <div id="benchmark-tool" class="tool-content">
+    <div id="benchmarkAnalyzerUI">
+      <!-- benchmark-analyzer.js에서 렌더링 -->
+    </div>
+  </div>
 </div>
 </div>
 </div>
@@ -171,6 +181,7 @@
 <script src="proposal-pdf.js"></script>
 <script src="template-video.js"></script>
 <script src="video-ui.js"></script>
+<script src="benchmark-analyzer.js"></script>
 <script src="app.js"></script>
 <!-- 토스트 컨테이너 -->
 <div class="toast-container" id="toastContainer"></div>

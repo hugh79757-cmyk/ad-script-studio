@@ -112,7 +112,8 @@ function resetFieldSources() {
 const tabState = {
   activeTab: 'proposal',  // 'proposal' or 'video'
   proposalResults: null,   // 제안서 결과 저장
-  videoResults: null       // 영상 소스 결과 저장
+  videoResults: null,       // 영상 소스 결과 저장
+  benchmarkResults: null    // 벤치마킹 분석 결과 저장 (Phase 7 — 연동 포인트 개방)
 };
 
 // 제안서 결과 저장
@@ -126,6 +127,12 @@ function saveProposalResults(results) {
 function saveVideoResults(results) {
   tabState.videoResults = results;
   sessionStorage.setItem('videoResults', JSON.stringify(results));
+}
+
+// 벤치마킹 분석 결과 저장 (Phase 7 — saveProposalResults 패턴 미러링, 연동 포인트 개방)
+function saveBenchmarkResults(results) {
+  tabState.benchmarkResults = results;
+  sessionStorage.setItem('benchmarkResults', JSON.stringify(results));
 }
 
 // 탭 전환 시 상태 복원
