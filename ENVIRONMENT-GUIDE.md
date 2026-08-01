@@ -8,6 +8,8 @@
 | TAVILY_API_KEY | Tavily Search API 키 (자동 조사) | Vercel 대시보드 → Settings → Environment Variables | 자동 조사 기능 사용 시 필수 |
 | KV_REST_API_URL | Vercel KV REST API URL | Vercel 대시보드 → Storage → KV → Settings | 기획안 검토 기능 사용 시 필수 |
 | KV_REST_API_TOKEN | Vercel KV REST API 토큰 | Vercel 대시보드 → Storage → KV → Settings | 기획안 검토 기능 사용 시 필수 |
+| **APIFY_API_TOKEN** | **Apify API 토큰 (벤치마킹 크롤링)** | **Vercel 대시보드 → Settings → Environment Variables** | **벤치마킹 분석기 사용 시 필수** |
+| **OPENAI_API_KEY** | **OpenAI API 키 (Whisper 음성 전사)** | **Vercel 대시보드 → Settings → Environment Variables** | **벤치마킹 분석기 사용 시 필수** |
 
 ## Vercel KV 설정 방법
 
@@ -50,6 +52,30 @@
 - 초당 1회 제한
 - 자동 조사 1회 = 4번의 검색 사용
 
+## APIFY_API_TOKEN 발급 방법
+
+1. https://apify.com 접속
+2. 회원가입 후 로그인 (무료 가입, 신용카드 불필요)
+3. Dashboard 왼쪽 메뉴 → **Settings** → **API & Integration**
+4. "Create new token" 클릭 → 토큰 발급
+5. 발급받은 토큰 복사
+
+### Apify 무료 플랜
+- 월 **$5 크레딧** 제공 (이월 없음)
+- 1회 분석 ≈ $0.08 (resultsLimit 30 기준)
+- 크레딧 소진 시 다음 주기까지 run 차단 (과금 아님)
+
+## OPENAI_API_KEY 발급 방법
+
+1. https://platform.openai.com 접속
+2. 로그인 후 좌측 메뉴 → **API keys**
+3. "Create new secret key" 클릭 → 키 발급
+4. 발급받은 키 복사
+
+### Whisper 과금
+- **$0.006/분** (60초 릴스 1개 기준 ≈ $0.006)
+- 5개 릴스 분석 시 ≈ $0.03
+
 ## 확인 방법
 
 ```bash
@@ -78,6 +104,43 @@ curl https://your-app.vercel.app/api/review \
   -d '{"id": "받은id", "status": "approved"}'
 ```
 
+## 벤치마킹 API 테스트
+
+```bash
+# POST /api/benchmark — 분석 작업 생성
+curl https://your-app.vercel.app/api/benchmark \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"instagramId": "target_account"}'
+
+# 응답: { "success": true, "jobId": "xxxxxxxxxxxxxxxxxxxxxx" }
+
+# GET /api/benchmark?id= — 작업 상태 폴링 (jobId는 위 응답에서 받은 값)
+curl "https://your-app.vercel.app/api/benchmark?id=xxxxxxxxxxxxxxxxxxxxxx"
+
+# 응답 예시 (crawling 단계):
+# { "jobId": "...", "status": "processing", "stage": "crawling" }
+
+# 응답 예시 (done 단계):
+# { "jobId": "...", "status": "completed", "stage": "done", "reels": [...], "result": {...} }
+```
+
+### 비용 안내
+
+| 항목 | 비용 | 비고 |
+|------|------|------|
+| Apify 크롤링 (1회) | ≈ $0.08 | resultsLimit 30, 바이럴 상위 5개만 분석 |
+| Whisper 전사 (1개 릴스, 60초) | $0.006 | $0.006/분 과금 |
+| Claude 구조 분석 (1회) | ≈ $0.02~0.05 | 단일 호출 |
+| **job당 총 예상 비용** | **≈ $0.13~0.16** | 상한 정책으로 통제 |
+| Apify 월 크레딧 | $5 (무료) | 약 60회 분석 가능 |
+
+### 서버 강제 상한 정책
+
+- `MAX_ANALYZE_REELS = 5` — 분석할 릴스 개수 상한 (UI에서 3~5 선택 가능하나 서버가 5로 클램프)
+- `maxTotalChargeUsd = 1` — Apify run 단일 비용 상한 (요청 시 자동 적용)
+- `videoDuration > 180초` 릴스는 전사 제외 (장편 릴스 비용/품질 방어)
+
 ## API 엔드포인트
 
 | 엔드포인트 | 메서드 | 설명 |
@@ -87,6 +150,8 @@ curl https://your-app.vercel.app/api/review \
 | `/api/review` | POST | 기획안 검토 생성 |
 | `/api/review?id=xxx` | GET | 기획안 검토 조회 |
 | `/api/review` | PATCH | 승인/수정요청 상태 업데이트 |
+| `/api/benchmark` | POST | 벤치마킹 분석 작업 생성 |
+| `/api/benchmark?id=xxx` | GET | 벤치마킹 작업 상태 조회 / 폴링 |
 | `/review/{id}` | GET | 고객 검토 페이지 (client-review.html) |
 
 ## 문제 해결
