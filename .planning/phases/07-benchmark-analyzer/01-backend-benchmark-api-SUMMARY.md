@@ -112,11 +112,15 @@ Apify run 비동기 시작 + 클라이언트 GET 폴링이 구동하는 KV 스�
 ## Self-Check: PASSED
 
 - [✅] `api/benchmark.js` 존재 — 근거: `ls api/benchmark.js` 결과 존재
-- [✅] `node --check api/benchmark.js` 통과 — 근거: 실행 출력 "SYNTAX OK"
-- [✅] 오프라인 테스트 통과 — 근거: `benchmark-offline-test.mjs` 출력 `11 passed, 0 failed` + TEST RUNNER ERROR 없음 (82개 인라인 단언 포함)
+- [✅] `node --check api/benchmark.js` 통과 — 근거: 실행 출력 "SYNTAX OK" (최종 재실행 포함)- [✅] 오프라인 테스트 통과 — 근거: `benchmark-offline-test.mjs` 출력 `11 passed, 0 failed` + TEST RUNNER ERROR 없음 (82개 인라인 단언 포함)
 - [✅] 상수 존재 — 근거: grep으로 `MAX_ANALYZE_REELS`, `VIRAL_VIEWS_THRESHOLD`, `APIFY_RESULTS_LIMIT`, `MAX_TOTAL_CHARGE_USD`, `MAX_REEL_DURATION_SEC`, `MAX_WHISPER_BYTES`, `KV_TTL_SEC`, `MAX_POLLS` 정의 확인
 - [✅] 기존 파일 무수정 — 근거: `git status --short`에서 변경 파일은 `.planning/REQUIREMENTS.md`/`.planning/ROADMAP.md`(플래너 선행 변경)와 신규 `api/benchmark.js`, `.planning/phase-07-benchmark-analyzer/`(플래너 선행)뿐. review.js/generate.js/research.js/index.html/app.js 등 기존 소스 변경 0건
 - [✅] 테스트 파일 비커밋 — 근거: 테스트는 `/var/folders/.../opencode/benchmark-offline-test.mjs`(저장소 외부)에 존재, `git status`에 나타나지 않음
+
+**사후 재검증 (2026-08-01):**
+- [✅] 커밋 존재 — 근거: `git log --all`에서 `1dcfc92`(feat), `ee98462`(docs) 확인
+- [✅] 상수 8개 정의 — 근거: `rg`로 `MAX_ANALYZE_REELS`/`VIRAL_VIEWS_THRESHOLD`/`APIFY_RESULTS_LIMIT`/`MAX_TOTAL_CHARGE_USD`/`MAX_REEL_DURATION_SEC`/`MAX_WHISPER_BYTES`/`KV_TTL_SEC`/`MAX_POLLS` 각 1건 확인
+- [✅] 작업 트리 클린 — 근거: 최종 `git status --short` 출력 없음 (변경 파일 0건)
 
 ## 잔존 위험
 
