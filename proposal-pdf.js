@@ -22,8 +22,12 @@ async function downloadProposalPDF(data, state, scenes, rationale, principles) {
   const doc = new jsPDF('p', 'mm', 'a4');
   
   // 폰트 설정
+  // ⚠️ jsPDF의 폰트 데이터(vFS)는 doc 인스턴스별로 분리되어 있으므로,
+  // 반드시 실제 출력할 doc에 폰트를 등록해야 한다 (loadKoreanFont(doc)로 전달).
+  // throwaway doc에 등록만 하고 새 doc를 만들면 "Unable to look up font label" 경고와
+  // 함께 폰트 미임베딩(한글 미출력) 상태로 생성된다.
   try {
-    await loadKoreanFont();
+    await loadKoreanFont(doc);
     doc.setFont('NotoSansKR');
   } catch (error) {
     console.warn('[proposal-pdf.js] 한글 폰트 로드 실패, 기본 폰트 사용');

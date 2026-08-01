@@ -156,17 +156,26 @@ ${inputContext}
       "reason": "이 제품에 이 원칙이 필요한 이유 (근거 필드 포함)",
       "groundingTag": "근거: [사용된 필드명]",
       "usedFields": ["target", "reviews"],
-      "example": "구현 예시 문자열"
+      "example": "구현 예시 문자열",
+      "citations": [
+        { "text": "리뷰/신뢰요소 원문 중 인용한 부분", "sourceField": "reviews | trustFactors" }
+      ]
     }
   ]
 }
 
 중요:
 - 모든 근거는 반드시 제공된 입력값에 기반할 것 (허위 근거 금지)
+- **rationale 배열은 반드시 1개 이상 포함할 것** (입력값이 적어도 target/concept/toneAndManner 기반으로 최소 3개 원칙 적용)
 - 입력값이 없는 필드는 해당 원칙을 rationale에서 제외할 것
 - 대사는 한국어로 작성
 - 연출지시는 구체적이고 실행 가능한 수준으로
 - 각 씬은 시각(비주얼), 음성(VO), 캡션을 별도로 기술
+- **각 rationale 항목에 반드시 citations 배열을 포함하고, reason에서 인용한 리뷰/신뢰요소 원문의 출처(sourceField: reviews 또는 trustFactors)를 명시할 것**
+- **citations 배열의 각 항목은 반드시 독립된 객체여야 하며, 한 객체에 하나의 인용만 포함할 것**
+- **sourceField는 오직 "reviews" 또는 "trustFactors"만 허용됨** (target, concept, price 등 다른 필드는 인용 금지)
+- citations의 text는 원본 입력값(reviewExcerpts 배열 요소 또는 trustFactors 배열 요소)에서 **그대로 복사**할 것 (의역/생성/요약/결합 금지)
+- **리뷰/신뢰요소가 없는 경우 citations는 빈 배열 []로 둘 것** (다른 필드 인용으로 대체 금지)
 `;
 }
 
@@ -247,9 +256,10 @@ ${inputs.excludedKeywords && inputs.excludedKeywords.length > 0
 /**
  * LLM API 응답에서 구조화된 결과 추출 (Anthropic + OpenAI 호환)
  * @param {Object} data - API 응답 (Anthropic 또는 OpenAI 호환)
+ * @param {Object} inputs - 사용자 입력값 (citations 보완용)
  * @returns {Object} 파싱된 결과
  */
-function parseApiResponse(data) {
+function parseApiResponse(data, inputs = {}) {
   // Anthropic: content[0].text
   // OpenAI 호환: choices[0].message.content
   let text = data.content?.[0]?.text || '';
@@ -289,8 +299,8 @@ function parseApiResponse(data) {
   
   // 파싱 성공 시 구조화된 결과 반환
   if (parsed && parsed.strategy && parsed.script) {
-    // rationale을 수동 모드 포맷으로 정규화
-    const normalizedRationale = normalizeRationale(parsed.rationale || []);
+    // rationale을 수동 모드 포맷으로 정규화 (inputs 전달로 citations 보완)
+    const normalizedRationale = normalizeRationale(parsed.rationale || [], inputs);
     return {
       success: true,
       strategy: parsed.strategy,
@@ -315,9 +325,10 @@ function parseApiResponse(data) {
 /**
  * LLM rationale 출력을 수동 모드 포맷으로 정규화
  * @param {Array} rationale - LLM이 반환한 rationale 배열
+ * @param {Object} inputs - 사용자 입력값 (citations 보완용)
  * @returns {Array} 수동 모드 포맷으로 변환된 배열
  */
-function normalizeRationale(rationale) {
+function normalizeRationale(rationale, inputs = {}) {
   if (!Array.isArray(rationale)) return [];
   
   return rationale.map(item => {
@@ -326,6 +337,12 @@ function normalizeRationale(rationale) {
     const groundingTag = item.groundingTag || '';
     const mergedReason = groundingTag ? `${reason} ${groundingTag}` : reason;
     
+    // citations 보완: 없으면 usedFields 기반으로 생성
+    let citations = item.citations || [];
+    if (!Array.isArray(citations) || citations.length === 0) {
+      citations = buildCitationsFromFields(item.usedFields || [], inputs);
+    }
+    
     return {
       principleId: item.principleId || '',
       principleName: item.principleName || '',
@@ -333,9 +350,38 @@ function normalizeRationale(rationale) {
       reason: mergedReason,
       usedFields: Array.isArray(item.usedFields) ? item.usedFields : [],
       example: item.example || '',
+      citations: citations,
       excluded: false
     };
   });
+}
+
+/**
+ * usedFields와 inputs를 기반으로 citations 생성
+ * @param {Array} usedFields - 사용된 필드 목록
+ * @param {Object} inputs - 사용자 입력값
+ * @returns {Array} citations 배열
+ */
+function buildCitationsFromFields(usedFields, inputs) {
+  const citations = [];
+  
+  // 리뷰 인용
+  if (usedFields.includes('reviews') && inputs.reviewExcerpts && inputs.reviewExcerpts.length > 0) {
+    citations.push({
+      text: inputs.reviewExcerpts[0],
+      sourceField: 'reviews'
+    });
+  }
+  
+  // 신뢰요소 인용
+  if (usedFields.includes('trustFactors') && inputs.trustFactors && inputs.trustFactors.length > 0) {
+    citations.push({
+      text: inputs.trustFactors[0],
+      sourceField: 'trustFactors'
+    });
+  }
+  
+  return citations;
 }
 
 // ============================================================================
@@ -466,18 +512,14 @@ export default async function handler(req, res) {
       // 모든 provider 실패
       throw new Error('모든 분석 provider 실패');
     });
-  } catch (error) {
-    console.error('[api/generate.js] 모든 Provider 실패:', error);
-    throw error;
-  }
-  
-  // API 에러 확인 (일부 provider가 error 필드 반환할 수 있음)
-  if (data.error) {
-    throw new Error(data.error.message);
-  }
+    
+    // API 에러 확인 (일부 provider가 error 필드 반환할 수 있음)
+    if (data.error) {
+      throw new Error(data.error.message);
+    }
     
     // 응답 파싱
-    const result = parseApiResponse(data);
+    const result = parseApiResponse(data, inputs);
     
     // 성공 응답
     return res.status(200).json(result);

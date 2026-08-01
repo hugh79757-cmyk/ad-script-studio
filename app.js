@@ -255,65 +255,76 @@ function initPhase3() {
   // 당위성 근거 생성 버튼 이벤트 (전략 개요 탭에 추가)
   const strategyTab = document.getElementById('strategy');
   if (strategyTab) {
-    // 당위성 근거 생성 버튼 추가
-    const rationaleBtn = document.createElement('button');
-    rationaleBtn.id = 'generateRationaleBtn';
-    rationaleBtn.className = 'action-btn rationale-btn';
-    rationaleBtn.type = 'button';
-    rationaleBtn.textContent = '당위성 근거 생성';
-    rationaleBtn.style.marginTop = '10px';
-    rationaleBtn.style.marginRight = '10px';
-    
-    // 제안서 PDF 다운로드 버튼 추가
-    const proposalPdfBtn = document.createElement('button');
-    proposalPdfBtn.id = 'proposalPdfBtn';
-    proposalPdfBtn.className = 'action-btn proposal-pdf-btn';
-    proposalPdfBtn.type = 'button';
-    proposalPdfBtn.textContent = '제안서 PDF 다운로드';
-    proposalPdfBtn.style.marginTop = '10px';
-    
-    // 버튼 컨테이너 생성
-    const btnContainer = document.createElement('div');
-    btnContainer.className = 'phase3-buttons';
-    btnContainer.appendChild(rationaleBtn);
-    btnContainer.appendChild(proposalPdfBtn);
-    
-    // 기존 내용 앞에 버튼 추가
-    strategyTab.insertBefore(btnContainer, strategyTab.firstChild);
-    
-    // 당위성 근거 생성 버튼 이벤트
-    rationaleBtn.addEventListener('click', () => {
-      const principles = window.appPrinciples || [];
-      if (principles.length === 0) {
-        alert('원칙이 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
-        return;
-      }
-      const rationale = generateRationaleManually(appState, principles);
-      renderRationaleCards(rationale);
-      window.appRationale = rationale;
-    });
-    
-    // 제안서 PDF 다운로드 버튼 이벤트
-    proposalPdfBtn.addEventListener('click', () => {
-      if (!window.appRationale) {
-        alert('먼저 당위성 근거를 생성해주세요.');
-        return;
-      }
-      if (!window.appScenes || window.appScenes.length === 0) {
-        alert('먼저 대본을 생성해주세요.');
-        return;
-      }
-      downloadProposalPDF(
-        {},  // 추가 데이터
-        appState,
-        window.appScenes,
-        window.appRationale,
-        window.appPrinciples || []
-      );
-    });
+    addPhase3Buttons(strategyTab);
   }
   
   // 수동↔자동 모드 전환 — initModeToggle()에서 처리 (Phase 4)
+}
+
+// Phase 3 버튼 (당위성 근거 생성 + 제안서 PDF 다운로드) 추가
+// renderRationaleCards()가 #strategy innerHTML을 덮어써서 버튼이 사라지는 문제를 방지하기 위해
+// 수동 모드 생성 후에도 다시 호출한다.
+function addPhase3Buttons(strategyTab) {
+  if (!strategyTab) return;
+  // 이미 존재하면 중복 생성하지 않음
+  if (strategyTab.querySelector('.phase3-buttons')) return;
+  
+  // 당위성 근거 생성 버튼 추가
+  const rationaleBtn = document.createElement('button');
+  rationaleBtn.id = 'generateRationaleBtn';
+  rationaleBtn.className = 'action-btn rationale-btn';
+  rationaleBtn.type = 'button';
+  rationaleBtn.textContent = '당위성 근거 생성';
+  rationaleBtn.style.marginTop = '10px';
+  rationaleBtn.style.marginRight = '10px';
+  
+  // 제안서 PDF 다운로드 버튼 추가
+  const proposalPdfBtn = document.createElement('button');
+  proposalPdfBtn.id = 'proposalPdfBtn';
+  proposalPdfBtn.className = 'action-btn proposal-pdf-btn';
+  proposalPdfBtn.type = 'button';
+  proposalPdfBtn.textContent = '제안서 PDF 다운로드';
+  proposalPdfBtn.style.marginTop = '10px';
+  
+  // 버튼 컨테이너 생성
+  const btnContainer = document.createElement('div');
+  btnContainer.className = 'phase3-buttons';
+  btnContainer.appendChild(rationaleBtn);
+  btnContainer.appendChild(proposalPdfBtn);
+  
+  // 기존 내용 앞에 버튼 추가
+  strategyTab.insertBefore(btnContainer, strategyTab.firstChild);
+  
+  // 당위성 근거 생성 버튼 이벤트
+  rationaleBtn.addEventListener('click', () => {
+    const principles = window.appPrinciples || [];
+    if (principles.length === 0) {
+      alert('원칙이 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+    const rationale = generateRationaleManually(appState, principles);
+    renderRationaleCards(rationale.generated);
+    window.appRationale = rationale;
+  });
+  
+  // 제안서 PDF 다운로드 버튼 이벤트
+  proposalPdfBtn.addEventListener('click', () => {
+    if (!window.appRationale) {
+      alert('먼저 당위성 근거를 생성해주세요.');
+      return;
+    }
+    if (!window.appScenes || window.appScenes.length === 0) {
+      alert('먼저 대본을 생성해주세요.');
+      return;
+    }
+    downloadProposalPDF(
+      {},  // 추가 데이터
+      appState,
+      window.appScenes,
+      window.appRationale?.generated || [],
+      window.appPrinciples || []
+    );
+  });
 }
 
 // 11. 스크립트 생성 시 씬 데이터 저장 + 당위성 근거 자동 생성
@@ -344,8 +355,10 @@ function initScriptGeneration() {
         const principles = window.appPrinciples || [];
         if (principles.length > 0) {
           const rationale = generateRationaleManually(appState, principles);
-          renderRationaleCards(rationale);
+          renderRationaleCards(rationale.generated);
           window.appRationale = rationale;
+          // renderRationaleCards()가 #strategy innerHTML을 덮어써 phase3 버튼이 사라졌으므로 다시 추가
+          addPhase3Buttons(document.getElementById('strategy'));
         }
       }
     }
@@ -459,13 +472,23 @@ function renderAutoResult(result) {
   
   // 당위성 근거 렌더링 (전략 탭에 추가) — 수동/자동 모드 모두 renderRationaleCards 사용
   if (result.rationale && Array.isArray(result.rationale)) {
-    renderRationaleCards({ generated: result.rationale, skipped: [] });
+    renderRationaleCards(result.rationale);
+    // PDF 다운로드 버튼 가드가 사용하는 window 데이터 설정 (auto 모드)
+    window.appRationale = { generated: result.rationale };
   }
   
-  // Phase 6: "2번으로 보내기" 버튼 추가 (제안서 결과 하단)
+  // PDF 다운로드 버튼 가드가 사용하는 대본 씬 데이터 설정 (auto 모드)
+  if (result.script && typeof result.script === 'object' && Array.isArray(result.script.scenes)) {
+    window.appScenes = result.script.scenes;
+  }
+  
+  // Phase 6: "2번으로 보내기" 버튼 + "제안서 PDF 다운로드" 버튼 추가 (제안서 결과 하단)
   const transferDiv = document.createElement('div');
   transferDiv.className = 'result-actions';
   transferDiv.innerHTML = `
+    <button id="proposalPdfBtn" class="action-btn proposal-pdf-btn" type="button">
+      제안서 PDF 다운로드
+    </button>
     <button id="transferBtn" class="transfer-btn" type="button">
       2번으로 보내기 →
     </button>
@@ -474,6 +497,25 @@ function renderAutoResult(result) {
     </button>
   `;
   strategyEl.appendChild(transferDiv);
+  
+  // "제안서 PDF 다운로드" 버튼 바인딩
+  document.getElementById('proposalPdfBtn').addEventListener('click', () => {
+    if (!window.appRationale) {
+      alert('먼저 당위성 근거를 생성해주세요.');
+      return;
+    }
+    if (!window.appScenes || window.appScenes.length === 0) {
+      alert('먼저 대본을 생성해주세요.');
+      return;
+    }
+    downloadProposalPDF(
+      {},  // 추가 데이터
+      appState,
+      window.appScenes,
+      window.appRationale?.generated || [],
+      window.appPrinciples || []
+    );
+  });
   
   // "2번으로 보내기" 버튼 바인딩
   document.getElementById('transferBtn').addEventListener('click', () => {

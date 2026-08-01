@@ -21,6 +21,14 @@ const PROPOSAL_LAYOUT = {
     contentWidth: 170 // 사용 가능 너비
   },
   
+  // 페이지 마진 (호환성: page.margin과 동일 값. proposal-pdf.js 등이 PROPOSAL_LAYOUT.margin.* 로 접근)
+  margin: {
+    top: 20,
+    bottom: 20,
+    left: 20,
+    right: 20
+  },
+  
   // 색상 팔레트
   colors: {
     background: { r: 26, g: 26, b: 26 },      // 다크 배경
