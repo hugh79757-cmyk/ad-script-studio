@@ -57,10 +57,10 @@ function bmEscapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-// 숫자를 한국어 로케일 천단위 구분으로 포맷 (조회수/좋아요)
+// 숫자를 한국어 로케일 천단위 구분으로 포맷 (조회수/좋아요) — 비수치 문자열은 이스케이프 (서버 데이터 innerHTML 삽입 방지)
 function bmFormatCount(value) {
   const n = Number(value);
-  return Number.isFinite(n) ? n.toLocaleString('ko-KR') : String(value ?? '-');
+  return Number.isFinite(n) ? n.toLocaleString('ko-KR') : bmEscapeHtml(String(value ?? '-'));
 }
 
 // 초 → m:ss 포맷 (전사 세그먼트 타임스탬프)
