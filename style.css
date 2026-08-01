@@ -996,6 +996,10 @@ input:checked + .toggle-slider:before {
 }
 
 /* 결과 카드 공통 */
+.benchmark-result {
+  margin-top: 8px;
+}
+
 .benchmark-result-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
