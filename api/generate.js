@@ -1,15 +1,31 @@
 /**
  * @file api/generate.js
- * @description Vercel serverless function — Anthropic Claude API 호출
+ * @description Vercel serverless function — 무료 우선 5단계 폴백으로 LLM 호출
  * 
  * POST /api/generate
  * Body: { inputs: { brandName, productName, concept, target, toneAndManner,
  *                    competitorInfo, priceRange, reviewExcerpts, trustFactors, excludedKeywords },
  *         mode: "auto" | "manual" }
  * 
- * Environment: ANTHROPIC_API_KEY (Vercel Secret)
- * Model: claude-sonnet-4-20250514
+ * Provider Chain (무료 우선):
+ * 1. NVIDIA NIM: nvidia/nemotron-3-ultra-550b-a55b (NVIDIA_API_KEY)
+ * 2. OpenCode Zen: nemotron-3-ultra-free (OPENCODE_API_KEY)
+ * 3. OpenCode Zen: deepseek-v4-flash-free (OPENCODE_API_KEY)
+ * 4. OpenCode Zen: mimo-v2.5-free (OPENCODE_API_KEY)
+ * 5. Paid DeepSeek: deepseek-v4-flash (DEEPSEEK_API_TOKEN)
  */
+
+// ============================================================================
+// 분석 Provider 체인 설정 (무료 우선 폴백)
+// ============================================================================
+
+const ANALYSIS_PROVIDERS = [
+  { name: 'nvidia-nim', baseUrl: 'https://integrate.api.nvidia.com/v1', apiKeyEnv: 'NVIDIA_API_KEY', model: 'nvidia/nemotron-3-ultra-550b-a55b', free: true },
+  { name: 'zen-nemotron', baseUrl: 'https://opencode.ai/zen/v1', apiKeyEnv: 'OPENCODE_API_KEY', model: 'nemotron-3-ultra-free', free: true },
+  { name: 'zen-deepseek-free', baseUrl: 'https://opencode.ai/zen/v1', apiKeyEnv: 'OPENCODE_API_KEY', model: 'deepseek-v4-flash-free', free: true },
+  { name: 'zen-mimo', baseUrl: 'https://opencode.ai/zen/v1', apiKeyEnv: 'OPENCODE_API_KEY', model: 'mimo-v2.5-free', free: true },
+  { name: 'deepseek-paid', baseUrl: 'https://api.deepseek.com/v1', apiKeyEnv: 'DEEPSEEK_API_TOKEN', model: 'deepseek-v4-flash', free: false }
+];
 
 // ============================================================================
 // 26 마케팅 원칙 (shortform-copywriting.md 기반)
@@ -223,17 +239,24 @@ ${inputs.excludedKeywords && inputs.excludedKeywords.length > 0
 }
 
 // ============================================================================
-// API 응답 파싱
+// API 응답 파싱 (Claude + OpenAI 호환)
 // ============================================================================
 
 /**
- * Claude API 응답에서 구조화된 결과 추출
- * @param {Object} data - Claude API 응답
+ * LLM API 응답에서 구조화된 결과 추출 (Anthropic + OpenAI 호환)
+ * @param {Object} data - API 응답 (Anthropic 또는 OpenAI 호환)
  * @returns {Object} 파싱된 결과
  */
 function parseApiResponse(data) {
-  // Claude API 응답에서 텍스트 추출
-  const text = data.content?.[0]?.text || '';
+  // Anthropic: content[0].text
+  // OpenAI 호환: choices[0].message.content
+  let text = data.content?.[0]?.text || '';
+  
+  if (!text) {
+    const choice = data.choices?.[0];
+    const msg = choice?.message || {};
+    text = msg.content || '';
+  }
   
   // JSON 블록 추출 시도
   let parsed = null;
@@ -346,11 +369,15 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   
-  // API 키 검증
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ 
-      error: 'API 키가 설정되지 않았습니다. Vercel 환경변수에서 ANTHROPIC_API_KEY를 설정해주세요.' 
+  // API 키 검증 (최소 하나의 분석 provider 키 필요)
+  const missingKeys = [];
+  const hasAnalysisKey = ANALYSIS_PROVIDERS.some(p => process.env[p.apiKeyEnv]);
+  if (!hasAnalysisKey) {
+    missingKeys.push('NVIDIA_API_KEY 또는 OPENCODE_API_KEY 또는 DEEPSEEK_API_TOKEN');
+  }
+  if (missingKeys.length > 0) {
+    return res.status(500).json({
+      error: `필수 API 키가 설정되지 않았습니다: ${missingKeys.join(', ')}. Vercel 환경변수에서 설정해주세요.`
     });
   }
   
@@ -366,42 +393,58 @@ export default async function handler(req, res) {
   // 사용자 프롬프트 생성
   const userPrompt = generateUserPrompt(inputs, mode);
   
+  // Provider 체인 호출 (무료 우선 폴백)
+  let data;
   try {
-    // Claude API 호출 (재시도 포함)
-    const data = await withRetry(async () => {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 4096,
-          system: systemPrompt,
-          messages: [{
-            role: 'user',
-            content: userPrompt
-          }]
-        })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const error = new Error(errorData.error?.message || `API 오류: ${response.status}`);
-        error.status = response.status;
-        error.headers = Object.fromEntries(response.headers.entries());
-        throw error;
+    data = await withRetry(async () => {
+      for (const provider of ANALYSIS_PROVIDERS) {
+        const providerKey = process.env[provider.apiKeyEnv];
+        if (!providerKey) continue; // 키 없으면 다음 provider로
+        
+        try {
+          const response = await fetch(`${provider.baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${providerKey}`
+            },
+            body: JSON.stringify({
+              model: provider.model,
+              max_tokens: 4096,
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+              ]
+            })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            // 성공 시 provider 정보 추가
+            result._provider = provider.name;
+            result._free = provider.free;
+            return result;
+          }
+          
+          // HTTP 에러인 경우 다음 provider 시도
+          console.warn(`[api/generate.js] Provider ${provider.name} 실패 (${response.status}), 다음 provider 시도`);
+        } catch (err) {
+          console.warn(`[api/generate.js] Provider ${provider.name} 네트워크 에러: ${err.message}, 다음 provider 시도`);
+        }
       }
       
-      return response.json();
+      // 모든 provider 실패
+      throw new Error('모든 분석 provider 실패');
     });
-    
-    // API 에러 확인
-    if (data.error) {
-      throw new Error(data.error.message);
-    }
+  } catch (error) {
+    console.error('[api/generate.js] 모든 Provider 실패:', error);
+    throw error;
+  }
+  
+  // API 에러 확인 (일부 provider가 error 필드 반환할 수 있음)
+  if (data.error) {
+    throw new Error(data.error.message);
+  }
     
     // 응답 파싱
     const result = parseApiResponse(data);
@@ -412,15 +455,15 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('[api/generate.js] API Error:', error);
     
-    // 에러 유형별 응답
-    if (error.status === 401) {
-      return res.status(500).json({ error: 'API 키가 유효하지 않습니다. ANTHROPIC_API_KEY를 확인해주세요.' });
+    // 에러 유형별 응답 (공통)
+    if (error.status === 401 || error.message?.includes('Unauthorized') || error.message?.includes('invalid') || error.message?.includes('Invalid')) {
+      return res.status(500).json({ error: 'API 키가 유효하지 않습니다. 환경변수를 확인해주세요.' });
     }
-    if (error.status === 429) {
+    if (error.status === 429 || error.message?.includes('rate limit') || error.message?.includes('Rate limit')) {
       return res.status(429).json({ error: 'API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.' });
     }
-    if (error.status === 529) {
-      return res.status(503).json({ error: 'Claude API가 과부하 상태입니다. 잠시 후 다시 시도해주세요.' });
+    if (error.status === 529 || error.status === 503 || error.message?.includes('overload') || error.message?.includes('overloaded')) {
+      return res.status(503).json({ error: 'API 서비스가 과부하 상태입니다. 잠시 후 다시 시도해주세요.' });
     }
     
     return res.status(500).json({ 
