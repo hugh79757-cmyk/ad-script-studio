@@ -1,83 +1,63 @@
+---
+gsd_state_version: 1.0
+milestone: v2.0
+milestone_name: 원소스 멀티유즈 콘텐츠 시스템
+status: planning
+last_updated: "2026-08-09T08:41:54.284Z"
+last_activity: 2026-08-09
+progress:
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
+---
+
 # STATE — AD SCRIPT STUDIO
 
 ## Current Milestone
 
 | Field | Value |
 |-------|-------|
-| Version | v1 (최종 완료) |
-| Phases | 7 (Phase 1~7) |
-| Current Phase | — (마일스톤 종료) |
-| Status | ✅ **v1 전체 실증 검증 완료 (2026-08-01)** — 프로덕션 배포 + E2E + PDF 한글 폰트 최적화 포함. Phase 1~6 + Phase 7(벤치마킹) 모두 구현/검증 완료. v1.1 후보는 BACKLOG.md로 이관 |
+| Version | v2.0 (계획 중) |
+| Phases | 6 (Phase 1~6, 계획 예정) |
+| Current Phase | — (요구사항 정의 완료, 플랜 시작 전) |
+| Status | 🟡 **v2 마일스톤 초기 — 리서치 + 요구사항 정의 완료, ROADMAP 작성 전** |
 
-## Milestone v1 Summary
+## Milestone v2 Goals
+
+- **비전:** 하나의 콘텐츠 코어(상품/주제 정보 + 당위성 근거)로부터 쇼츠·카드뉴스·인포그래픽·롱폼 4개 포맷을 생성하는 **원소스 멀티유즈 콘텐츠 시스템**
+- **핵심 확장:** v1 전략 제안서 생성기 무손상 유지 + Python 파이프라인(vox-content 계승) + 외부 API(Pexels/Pixabay, edge-tts, Pollinations.ai, Whisper) + 제휴 고지 + 과장 필터
+- **Requirements:** 27개 (CORE-01~05, SHORTS-01~07, CARDS-01~02, INFOGRAPHIC-01~02, LONGFORM-01~02, BRIDGE-01~03, RENDER-01~04, LEGAL-01~05)
+
+## v1 아카이브 (참고)
 
 - **Vision:** E-commerce **전략 제안서 생성기** (대본 생성기가 아님)
-- **Phases:** 6 phases — UI(확장입력), 대본(구성요소), **당위성엔진+제안서(핵심)**, API, 영상소스(내부용), 배포 + Phase 7(벤치마킹 분석기, v1 내 추가)
-- **Requirements:** 27 total (R1-R27) — 기존 22개 + 신규 5개 (+ Phase 7 R28-R35)
-- **핵심 변경 (2026-07-31):** Phase 3을 당위성 엔진 + 설득형 제안서 중심으로 재설계. 영상 소스 생성기는 내부용으로 격하.
-- **Status:** ✅ **완료 (2026-08-01)** — 프로덕션 배포(https://ad-script-studio.vercel.app) + 수동/자동 모드 E2E + PDF 한글 폰트 최적화(v1.0.1: CDN 변수 폰트→로컬 서브셋, PDF 817KB→316KB 61% 감소) + Phase 7 UAT 12/12. v1.1 후보는 BACKLOG.md.
+- **Phases:** 7 phases — UI(확장입력), 대본(구성요소), **당위성엔진+제안서(핵심)**, API, 영상소스(내부용), 배포 + Phase 7(벤치마킹 분석기)
+- **Requirements:** 27 total (R1-R27)
+- **Status:** ✅ **완료 (2026-08-01)** — 프로덕션 배포(https://ad-script-studio.vercel.app) + 수동/자동 모드 E2E + PDF 한글 폰트 최적화(v1.0.1) + Phase 7 UAT 12/12
 
-## Artifact Inventory
+## Artifact Inventory (v1 검증 완료)
 
-| Artifact | Status | Location |
-|----------|--------|----------|
+| Artifact | 상태 | 위치 |
+|----------|------|------|
 | PROJECT.md | [검증됨] | `.planning/PROJECT.md` |
-| ROADMAP.md | [검증됨] | `.planning/ROADMAP.md` |
-| REQUIREMENTS.md | [검증됨] | `.planning/REQUIREMENTS.md` |
+| ROADMAP.md | [갱신 필요] | `.planning/ROADMAP.md` — v2 반영 예정 |
+| REQUIREMENTS.md | [검증됨] | `.planning/REQUIREMENTS.md` — v2 27개 요구사항 |
 | config.json | [검증됨] | `.planning/config.json` |
 | MILESTONE_SUMMARY-v1.md | [검증됨] | `.planning/reports/MILESTONE_SUMMARY-v1.md` |
-| shortform-copywriting.md | [검증됨] | `skills/custom/shortform-copywriting.md` |
-| STATE.md | [검증됨] | `.planning/STATE.md` |
-| phase-02/CONTEXT.md | [검증됨] | `.planning/phase-02-script-render-pdf/CONTEXT.md` |
-| phase-02/PLAN.md | [검증됨] | `.planning/phase-02-script-render-pdf/PLAN.md` |
-| template-plan.js | [검증됨] | `template-plan.js` — 대본 템플릿 + 단축 규칙 |
-| pdf.js | [검증됨] | `pdf.js` — jsPDF 래퍼 (한글 폰트 지원) |
-| app.js (Phase 2) | [검증됨] | `app.js` — 생성 버튼 연결 + 결과 렌더링 + 액션 버튼 |
-| index.html (Phase 2) | [검증됨] | `index.html` — jsPDF CDN + 스크립트 태그 추가 |
-| style.css (Phase 2) | [검증됨] | `style.css` — 대본 테이블 + 스토리보드 카드 스타일 |
-| skill-loader.js (Phase 3) | [검증됨] | `skill-loader.js` — shortform-copywriting.md fetch + 파싱 |
-| rationale-engine.js (Phase 3) | [검증됨] | `rationale-engine.js` — 당위성 근거 생성 로직 |
-| proposal-pdf.js (Phase 3) | [검증됨] | `proposal-pdf.js` — 설득형 제안서 PDF 템플릿 |
-| proposal-layout.js (Phase 3) | [검증됨] | `proposal-layout.js` — 제안서 PDF 레이아웃 시스템 |
-| problem-diagnosis-template.js (Phase 3) | [검증됨] | `problem-diagnosis-template.js` — 문제진단 섹션 템플릿 |
-| expected-effects-template.js (Phase 3) | [검증됨] | `expected-effects-template.js` — 기대효과 서술 템플릿 |
-| api/generate.js (Phase 4) | [검증됨] | `api/generate.js` — Claude API 서버리스 함수 (26원칙 시스템 프롬프트) |
-| vercel.json (Phase 4) | [검증됨] | `vercel.json` — Vercel 배포 설정 (API + 정적 파일 라우팅) |
-| app.js (Phase 4 업데이트) | [검증됨] | `app.js` — API 호출 로직 + 모드 전환 UI + 로딩 스피너 |
-| index.html (Phase 4 업데이트) | [검증됨] | `index.html` — 모드 전환 토글 + 로딩 스피너 HTML |
-| style.css (Phase 4 업데이트) | [검증됨] | `style.css` — 토글 스위치 + 로딩 스피너 스타일 |
-| phase-06/PLAN.md | [검증됨] | `.planning/phase-06-integration-deploy/PLAN.md` — Phase 6 메인 플랜 |
-| phase-06/CONTEXT.md | [검증됨] | `.planning/phase-06-integration-deploy/CONTEXT.md` — Phase 6 컨텍스트 |
-| phase-06/01-state-management.PLAN.md | [검증됨] | `.planning/phase-06-integration-deploy/01-state-management.PLAN.md` — Wave 1 플랜 |
-| phase-06/02-e2e-deploy.PLAN.md | [검증됨] | `.planning/phase-06-integration-deploy/02-e2e-deploy.PLAN.md` — Wave 2 플랜 |
-| phase-06/01-state-management-SUMMARY.md | [검증됨] | `.planning/phases/06-integration-deploy/01-state-management-SUMMARY.md` — Wave 1 요약 |
-| phase-05/PLAN.md | [검증됨] | `.planning/phase-05-video-source/PLAN.md` — Phase 5 메인 플랜 |
-| phase-05/CONTEXT.md | [검증됨] | `.planning/phase-05-video-source/CONTEXT.md` — Phase 5 컨텍스트 |
-| phase-05/01-scene-parser.PLAN.md | [검증됨] | `.planning/phase-05-video-source/01-scene-parser.PLAN.md` — Wave 1 플랜 |
-| phase-05/01-scene-parser-SUMMARY.md | [검증됨] | `.planning/phase-05-video-source/01-scene-parser-SUMMARY.md` — Wave 1 요약 |
-| phase-05/02-tab-integration.PLAN.md | [검증됨] | `.planning/phase-05-video-source/02-tab-integration.PLAN.md` — Wave 2 플랜 |
-| template-video.js (Phase 5) | [검증됨] | `template-video.js` — 씬 파싱 + EN 프롬프트 생성 모듈 |
-| video-ui.js (Phase 5) | [검증됨] | `video-ui.js` — 영상 소스 생성기 UI 모듈 |
-| state-manager.js (Phase 6 업데이트) | [검증됨] | `state-manager.js` — 탭 상태 관리 + "2번으로 보내기" 전달 |
-| app.js (Phase 6 업데이트) | [검증됨] | `app.js` — "2번으로 보내기" 버튼 + initTabPersistence |
-| test-e2e.js | [검증됨] | `test-e2e.js` — 브라우저 콘솔 E2E 테스트 (수동/자동 모드) |
-| package.json | [검증됨] | `package.json` — Vercel 배포 스크립트 |
-| deploy.sh | [검증됨] | `deploy.sh` — 자동화 배포 스크립트 |
-| ENVIRONMENT-GUIDE.md | [검증됨] | `ENVIRONMENT-GUIDE.md` — ANTHROPIC/TAVILY/KV/APIFY/OPENAI 환경변수 설정 가이드 (Phase 7 Wave 3에서 APIFY/OPENAI 발급 방법·curl·비용 안내 추가) |
-| phase-07/03-config-docs-SUMMARY.md | [검증됨] | `.planning/phases/07-benchmark-analyzer/03-config-docs-SUMMARY.md` — Wave 3 요약 |
-| phase-07/07-UAT.md | [검증됨] | `.planning/phases/07-benchmark-analyzer/07-UAT.md` — UAT 12/12 통과 (실제 gymshark 계정 E2E 포함) |
-| BACKLOG.md | [검증됨] | `BACKLOG.md` — v1.1 후보 (PDF bold 굵기, 자동 모드 지연 등) |
-| RETROSPECTIVE.md | [검증됨] | `.planning/reports/RETROSPECTIVE.md` — v1 회고 작성 완료 |
+| shortform-copywriting.md | [검증됨] | `skills/custom/shortform-copywriting.md` (26개 원칙) |
+| STATE.md | [갱신 중] | `.planning/STATE.md` |
+| research/STACK.md | [검증됨] | `.planning/research/STACK.md` — 스택 리서치 |
+| research/FEATURES.md | [검증됨] | `.planning/research/FEATURES.md` — 기능 리서치 |
+| research/ARCHITECTURE.md | [검증됨] | `.planning/research/ARCHITECTURE.md` — 아키텍처 리서치 |
+| research/PITFALLS.md | [검증됨] | `.planning/research/PITFALLS.md` — 함정 리서치 |
 
-## Next Actions
+## Next Actions (v2)
 
-1. **v1 마일스톤 종료** — 프로덕션 배포 + E2E + PDF 폰트 최적화 검증 완료 (2026-08-01)
-2. **v1.1 백로그 (BACKLOG.md)**
-   - PDF 한글 bold 굵기 미표현 — Bold 서브셋 별도 등록 검토 (PDF 크기 2배 트레이드오프)
-   - 자동 모드 API 생성 지연 (90초) — 프롬프트 경량화/스트리밍/캐시 검토
-   - jsPDF CDN 의존 (cdn.jsdelivr.net) — 자체 호스팅 검토
-   - 서브셋 폰트 1.05MB — 기호 분리 시 876KB 가능
-3. **GitHub 레포 프라이빗 전환** — Settings → Danger Zone → Make private (지연 중)
+1. **ROADMAP.md v2 작성** — 6개 Phase 구조로 갱신 (현재)
+2. **Phase 1 플랜 생성** — 콘텐츠 코어 확장 + 파일 저장 (CORE-01~05)
+3. **Phase 2~6 순차 플랜·실행** — 쇼츠/카드뉴스+인포그래픽/롱폼+브릿지/렌더링/법적컴플라이언스
 
 ## Git History
 
@@ -136,3 +116,10 @@ dc4852d docs: initialize GSD planning for AD SCRIPT STUDIO
 | v1-phase7-uat | 2026-08-01 | Phase 7 UAT 완료: UAT 12/12 통과 (실제 gymshark 계정 E2E 포함 — POST job → 폴링 stage 전이 → 전사/분석/대본 재조립). 분석 프로바이더 체인 문서 정정. |
 | v1-0-1-font | 2026-08-01 | PDF 한글 폰트 최적화: CDN 변수 폰트(10.4MB) fetch 제거 → 로컬 서브셋(1.1MB, KS X 1001 2,350자+224+기호988+자모/라틴) base64 임베딩 + AbortController 10초 타임아웃 + 기본 폰트 폴백. PDF 817KB→316KB (61% 감소), 글리프 누락 0. 프로덕션 배포 + E2E 재검증 완료. |
 | v1-final | 2026-08-01 | **v1 전체 실증 검증 완료 (프로덕션 배포 + E2E + PDF 한글 폰트 최적화 포함)**. Phase 1~7 모두 구현/검증 완료. Proposal PDF 라이트 테마 전환 (가독성 이슈 해결 — 흰 배경+어두운 텍스트). v1.1 후보는 BACKLOG.md로 이관. |
+
+## Current Position
+
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-08-09 — Milestone v2.0 started

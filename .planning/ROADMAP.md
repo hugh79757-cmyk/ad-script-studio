@@ -1,198 +1,198 @@
-# ROADMAP — AD SCRIPT STUDIO
+# ROADMAP — AD SCRIPT STUDIO v2 원소스 멀티유즈 콘텐츠 시스템
 
-> 리팩터링 일자: 2026-07-31
-> 변경 사유: 도구 1의 정체성을 '대본 생성기'에서 '전략 제안서 생성기'로 재정의. Phase 3(당위성 엔진 + 제안서 문서화)를 프로젝트 핵심으로 격상. 영상 소스 생성기는 내부용 재료 도구로 격하.
-
----
-
-## Phase 1: 전략 제안서 생성기 UI 골격 + 입력 필드 확장
-
-**Goal:** 2패널 레이아웃, 다크테마, **확장된 입력 필드**가 동작하는 클라이언트 사이드 UI 골격 완성
-
-**Requirements:** R1, R2, R3, R4, R23, R24
-
-**Success Criteria:**
-- 좌측에 **10개 입력 필드**가 표시됨:
-  - 기존: 브랜드명, 상품명, 컨셉, 타겟, 톤앤매너 (5개)
-  - 신규: 경쟁 제품명/차이점, 가격대/구매 장벽, 핵심 리뷰 발췌 (최소 3건), 브랜드 신뢰 요소, 제외 키워드 (5개)
-- 우측에 결과 영역(전략 개요/대본/스토리보드 탭)이 표시됨
-- 다크테마 적용 (배경 #0a0a0a~#1a1a1a, 텍스트 #e0e0e0 이상 대비)
-- 768px 이하에서 2패널 → 1패널 스택으로 반응형 전환
-- 필수 입력 필드 미입력 시 경고 표시 (브랜드명, 상품명, 타겟 필수)
-- **입력 필드 확장 배경:** Phase 3의 당위성 엔진이 진짜 근거 있는 문장을 만들려면 원자료(리뷰, 경쟁사, 가격)가 필요. 필드가 부족하면 당위성 문구가 공허해짐
-
-**Parallelization:**
-- Wave 1 (default): index.html, style.css, app.js 작성
-- Wave 1: 입력 필드 컴포넌트 (기존 5개 + 신규 5개)
-
-**Agent Verification (After):**
-- gsd-verifier: Goal-backward — "UI 골격이 동작하는가?" → 브라우저에서 열어 2패널, 다크테마, 10개 입력필드, 결과영역 확인
-- gsd-ui-checker: UI-SPEC.md에서 dark mode, responsive, accessibility 스코어 확인
+> 마일스톤: v2.0 원소스 멀티유즈 콘텐츠 시스템
+> 작성일: 2026-08-09
+> 기반: 설계 4개 문서(ARCHITECTURE, FOLDER_STRUCTURE, NICHE_SCHEMA, LEGAL_COMPLIANCE) + 4개 차원 리서치(STACK, FEATURES, ARCHITECTURE, PITFALLS)
+> 선행 마일스톤: v1 (전략 제안서 생성기, Phase 1~7 완료)
 
 ---
 
-## Phase 2: 기획안 생성 로직 + 결과 렌더링 + PDF (제안서의 구성요소로)
+## Phase 1: 콘텐츠 코어 확장 + 파일 저장
 
-**Goal:** 템플릿 기반 60초 숏폼 대본 생성 및 결과 카드 렌더링 — **대본은 제안서 안에 포함된 하나의 구성요소**로 설계
+**Goal:** v1의 10개 입력 필드 + 당위성 엔진 + mc 깊이단계 개념을 병합한 콘텐츠 코어 YAML 스키마를 정의하고, campaignId 기반 파일 저장/불러오기/목록 조회 기능을 완성한다.
 
-**Requirements:** R5, R6, R7
+**Requirements:** CORE-01, CORE-02, CORE-03, CORE-04, CORE-05
 
 **Success Criteria:**
-- "생성" 버튼 클릭 시 템플릿 기반 60초 숏폼 대본이 결과 영역에 렌더링됨
-- 대본은 타임라인(0:00-0:03 등) + 대사 + 연출지시 포함
-- **대본 생성 로직은 축소된 비중으로 유지** — 최종 산출물인 제안서 PDF 내에서 "구현된 크리에이티브" 섹션으로 종속
-- "PDF 다운로드" 버튼 클릭 시 jsPDF로 표준 PDF 생성 및 다운로드
-- "복사" 버튼 클릭 시 대본 전체가 클립보드에 복사됨
-- "새로 만들기" 버튼 클릭 시 입력/결과 초기화
+- 콘텐츠 코어 YAML 스키마가 7개 그룹(식별·메타 / 제품 / 타겟·목적 / 메시지·당위성 / 근거자료 / 법적고지 / 깊이단계 소구점) 30+ 필드로 정의됨
+- `campaignId` 입력 시 `content/campaigns/{campaignId}/core.yaml`이 자동 생성됨
+- 저장된 코어 파일을 불러와서 콘텐츠 코어 객체로 파싱할 수 있음
+- 캠페인 목록 조회 시 저장된 campaignId 리스트를 볼 수 있음
+- v1 `appState`(10개 필드) → 콘텐츠 코어 변환 함수(`fromAppState`/`toAppState`)가 동작함
+- `purpose.stage` enum(인지/고려/결정) + `depth.basic/applied/advanced` 소구점 필드가 스키마에 포함됨
+- **v1 무손상:** 기존 index.html/app.js/state-manager.js 동작 변화 없음
 
 **Parallelization:**
-- Wave 1 (default): template-plan.js (대본 템플릿 + 단축규칙), pdf.js (jsPDF 래퍼), app.js 업데이트
+- Wave 1 (default): core.yaml 스키마 정의, 저장/불러오기/목록 조회 함수, fromAppState/toAppState 변환
+- Wave 1: depth.basic/applied/advanced 소구점 필드 + purpose.stage enum
 
 **Agent Verification (After):**
-- gsd-verifier: "템플릿 기반 대본 생성이 동작하는가?" → 브라우저에서 입력 후 생성 클릭 → 결과 렌더링 확인
-- gsd-ui-checker: 결과 카드 레이아웃, 버튼 동작, PDF 다운로드 확인
+- gsd-verifier: Goal-backward — "콘텐츠 코어가 저장·불러오기·목록 조회되는가?" → campaignId 지정 후 core.yaml 생성·파싱·목록 확인
+- gsd-verifier: "v1 appState → 콘텐츠 코어 변환이 동작하는가?" → v1 상태 값으로 fromAppState 호출 후 필드 매핑 확인
+- gsd-plan-checker: Phase 2(쇼츠 렌더러)가 Phase 1의 콘텐츠 코어 스키마를 입력으로 사용할 수 있는지 인터페이스 확인
 
 ---
 
-## Phase 3: 당위성 엔진 + 설득형 제안서 문서화 ⭐ 핵심 Phase
+## Phase 2: 쇼츠 렌더러 (대본 ~ 이미지·TTS까지)
 
-**Goal:** 제품별 맞춤 당위성 근거를 생성하고, "감이 아니라 논리로 만든다"는 걸 증명하는 설득형 제안서 PDF를 출력한다. **이 프로젝트의 진짜 핵심.**
+**Goal:** 콘텐츠 코어를 입력받아 60초 숏폼 대본 + 씬별 EN 이미지 프롬프트 + 실사 이미지(Pixabay) + AI 이미지(Pollinations.ai) + TTS(edge-tts)까지 생성하고, 실제 영상 렌더링(moviepy)은 "준비 완료" 상태로 출력한다. 렌더링 완성(Phase 5)과 분리하여 먼저 대본·프롬프트·미디어 자산 생성까지 끝낸다.
 
-**Requirements:** R8, R9, R10, R25, R26, R27
+**Requirements:** SHORTS-01, SHORTS-02, SHORTS-03, SHORTS-04, SHORTS-05, SHORTS-06, SHORTS-07
 
 **Success Criteria:**
-
-### 3-1. 당위성 엔진 (Rationale Engine)
-- 26개 원칙이 시스템 프롬프트에 주입됨 (R8)
-- **원칙 카드가 단순 나열이 아님:** 제품의 실제 입력값(타겟, 소구점, 브랜드 신뢰 요소, 리뷰 발췌, 경쟁 제품 차이)을 근거로 **"왜 이 제품에는 이 원칙이 필요한가"**를 한두 문장으로 생성
-- 수동 모드: 정형화된 문구 템플릿으로 대체 (원칙명 + 입력값 기반 간단 근거)
-- 자동 모드(P4): Claude API가 입력값과 원칙을 연결해서 논리를 만들어냄 — **이 모드에서 당위성 엔진의 진가 발휘**
-
-### 3-2. 설득형 제안서 PDF 구조 (R10, R25, R26)
-기존 순서(표지→개요→대본→스토리보드→전략→원칙)를 버리고, **설득 논리의 흐름**을 따름:
-
-| 순서 | 섹션 | 내용 | 목적 |
-|------|------|------|------|
-| 1 | 표지 | 브랜드명 + 날짜 + "광고 기획안" | 전문성第一印象 |
-| 2 | **문제 진단** | 타겟이 겪는 문제를 데이터/리뷰 기반으로 짚어줌 | "이 문제는 실제로 존재한다" 증명 |
-| 3 | **전략 및 근거** | 크리에이티브 전략 + 어떤 심리적 원칙에 근거하는지 설명 | "우리는 왜 이 방식을 택했는가" 증명 |
-| 4 | **구현된 크리에이티브** | 대본 + 스토리보드 | 전략이 실제로 어떻게 구현되는지 제시 |
-| 5 | **기대 효과** | 정확한 수치 보장 불가, "이런 방식이 통상적으로 어떤 효과를 내는지" 일반적 근거 서술 | 기대치 설정 + 신뢰 형성 |
-| 6 | **부록: 원칙 전체 리스트** | 26개 원칙 목록 + 각각 왜 이 제품에 적용되었는지 근거 | 투명성 + 전문성 증명 |
-
-- 문서 전체가 **"우리는 감이 아니라 논리로 만든다"**는 구조로 설득
-- 기대 효과 섹션: 수치 보장이 아닌 일반적 근거 서술 (예: "첫 3초 훅 전략은 숏폼 광고에서 시청 완료율을 평균 2~3배 향상시킵니다" 형태)
+- 콘텐츠 코어 입력 → 7장면 60초 대본 생성 (v1 template-plan.js 확장, 15/30초 축약 규칙 유지)
+- 대본 → 씬 파싱 → 씬별 EN 이미지 프롬프트 생성 (v1 template-video.js 계승, 최소 3/최대 10씬, 상세도 조절 최소/보통/상세)
+- Pixabay API로 장면별 실사 이미지 검색·다운로드 → `content/campaigns/{campaignId}/shorts/images/` 저장 + 출처 로그
+- Pollinations.ai(Flux)로 AI 이미지 생성 프롬프트 준비 + 실행 (익명 15초당 1회 제한 인지, API 키 옵션)
+- edge-tts로 장면별 한국어 TTS 생성 → `content/campaigns/{campaignId}/shorts/audio/` 저장 (ko-KR-SunHiNeural)
+- **렌더링 준비 완료 상태 출력:** 대본 + 씬별 프롬프트 + TTS 파일 경로 + 이미지 경로까지 생성하고, 실제 moviepy 렌더링은 "준비 완료, Phase 5에서 실행"으로 표시
+- 쇼츠 결과물 장면별/전체 카피 버튼 동작
+- **v1 무손상:** template-plan.js, template-video.js 원본 유지 (확장이지 대체가 아님)
 
 **Parallelization:**
-- Wave 1 (default): skill-loader.js (shortform-copywriting.md fetch + 파싱), rationale-engine.js (당위성 근거 생성 로직), proposal-pdf.js (설득형 제안서 PDF 템플릿), app.js 업데이트
-- Wave 2 (after wave 1): 제안서 PDF 레이아웃 디자인, 문제진단 섹션 템플릿, 기대효과 서술 템플릿
+- Wave 1 (default): 대본 생성(SHORTS-01) + 씬 파싱/프롬프트(SHORTS-02) — v1 템플릿 계승
+- Wave 1: Pixabay 이미지(SHORTS-03) + Pollinations.ai(SHORTS-04) — 병렬 가능 (서로 독립)
+- Wave 2 (after wave 1): edge-tts TTS(SHORTS-05) + 렌더링 준비 완료 출력(SHORTS-06) + 카피 버튼(SHORTS-07)
 
 **Agent Verification (After):**
-- gsd-verifier: "당위성 엔진이 동작하는가?" → 입력값 기반으로 "왜 이 원칙이 필요한가" 근거 문장 생성 확인
-- gsd-verifier: "제안서 PDF의 설득 흐름이 맞는가?" → 문제진단→전략및근거→크리에이티브→기대효과→원칙부록 순서 확인
-- gsd-ui-checker: 제안서 PDF 레이아웃, 서식, 폰트 표시 확인
+- gsd-verifier: "콘텐츠 코어 → 쇼츠 대본이 생성되는가?" → 코어 입력 후 대본 출력 확인
+- gsd-verifier: "씬별 EN 이미지 프롬프트가 생성되는가?" → 씬 파싱 결과 확인
+- gsd-verifier: "Pixabay/Pollinations.ai 이미지 + edge-tts TTS가 생성되는가?" → 파일 존재 확인
+- gsd-verifier: "렌더링 준비 완료 상태가 출력되는가?" → Phase 5 이연 표시가 있는지 확인
+- gsd-plan-checker: Phase 5(렌더링)가 Phase 2의 출력물을 입력으로 사용할 수 있는지 인터페이스 확인
 
 ---
 
-## Phase 4: Claude API 자동화
+## Phase 3: 카드뉴스 + 인포그래픽 렌더러
 
-**Goal:** Vercel 서버리스 함수에서 Anthropic Claude API를 호출하여 광고 기획안을 자동 생성하고, 수동/자동 모드 전환이 동작함
+**Goal:** 콘텐츠 코어를 입력받아 카드뉴스 슬라이드별 출력(카피+시각지시+EN이미지프롬프트)과 인포그래픽 데이터 출력(비교데이터+시각구성지시)을 생성한다. 마지막 슬라이드/데이터에 제휴 고지를 삽입하고, 수치·비교 주장에 과장 검증 플래그를 표시한다.
 
-**Requirements:** R11, R12, R13
+**Requirements:** CARDS-01, CARDS-02, INFOGRAPHIC-01, INFOGRAPHIC-02
 
 **Success Criteria:**
-- Vercel 서버리스 함수 `/api/generate`에서 Anthropic API 호출
-- API 키가 프론트엔드에 노출되지 않음 (환경변수 관리)
-- "생성" 버튼 클릭 시 API 호출 → 로딩 스피너 → 결과 표시
-- 수동 모드 ↔ 자동 모드 토글 스위치 동작
-- **자동 모드에서 Phase 3의 당위성 엔진이 진짜 논리적 근거를 생성** — 수동 모드의 정형화된 문구와 차별화
+- 콘텐츠 코어 입력 → 카드뉴스 슬라이드별 출력 (슬라이드 수 자동 결정, 최소 5장, 각 슬라이드: 한국어 카피 + 시각 지시 + 필요 시 EN 이미지 프롬프트)
+- 카드뉴스 마지막 슬라이드에 제휴 고지 삽입 (legal.disclosureText 반영)
+- 콘텐츠 코어 입력 → 인포그래픽 데이터 출력 (가격/경쟁사/리뷰 통계 기반 비교 데이터 + 시각 구성 지시)
+- 인포그래픽 출력에 수치·비교 주장 과장 검증 플래그 표시 (근거 필드 없는 수치 주장 표시)
+- 카드뉴스·인포그래픽 출력물이 `content/campaigns/{campaignId}/cards/` / `infographic/`에 저장됨
+- **v1 무손상:** 기존 렌더러 템플릿(template-plan.js 등) 영향 없음
 
 **Parallelization:**
-- Wave 1 (default): api/generate.js (서버리스 함수), vercel.json 설정
-- Wave 2 (after wave 1): app.js에 API 호출 로직, 모드 전환 UI
+- Wave 1 (default): 카드뉴스 렌더러(CARDS-01, CARDS-02)
+- Wave 1: 인포그래픽 렌더러(INFOGRAPHIC-01, INFOGRAPHIC-02) — 카드뉴스와 병렬 가능
 
 **Agent Verification (After):**
-- gsd-verifier: "API 자동화가 동작하는가?" → 자동 모드에서 입력 후 생성 → 결과 표시 확인
-- gsd-security-checker: API 키 미노출 확인 (네트워크 탭에서 프론트엔드 요청에 키 없음)
+- gsd-verifier: "카드뉴스 슬라이드별 출력이 생성되는가?" → 슬라이드 수·카피·시각지시 확인
+- gsd-verifier: "마지막 슬라이드에 제휴 고지가 삽입되는가?" → legal.disclosureText 반영 확인
+- gsd-verifier: "인포그래픽 비교 데이터가 출력되는가?" → 가격/경쟁사/리뷰 통계 기반 데이터 확인
+- gsd-verifier: "과장 검증 플래그가 표시되는가?" → 근거 없는 수치 주장에 플래그 확인
 
 ---
 
-## Phase 5: 영상 소스 생성기 (내부용 재료 도구)
+## Phase 4: 롱폼 렌더러 + 주제 브릿지
 
-**Goal:** 두 번째 도구(영상 소스 생성기)가 탭으로 전환 가능하고, 씬 파싱, EN 프롬프트 생성, 상세도 조절, 카피 버튼이 동작함
+**Goal:** 콘텐츠 코어를 입력받아 mc 깊이단계(기초/응용/고급) 구조를 적용한 롱폼 원고를 생성하고, mc 블로그 체인의 기존 주제(시드 키워드+깊이단계 소제목+니치 태그)를 조회·선택하여 콘텐츠 코어 초안으로 적재하는 주제 브릿지 인터페이스를 완성한다.
 
-**Requirements:** R14, R15, R16, R17, R18
-
-**이 도구의 성격:** 사용자 본인만 보는 내부용 재료 도구. 클라이언트에게 보여줄 목적이 아님. UI 완성도나 클라이언트향 설명에 시간을 쓸 필요 없이, 이미지/영상 생성 AI에 바로 넣을 수 있는 텍스트만 정확하게 뽑아내면 충분.
+**Requirements:** LONGFORM-01, LONGFORM-02, BRIDGE-01, BRIDGE-02, BRIDGE-03
 
 **Success Criteria:**
-- "영상 소스 생성기" 탭 클릭 시 두 번째 도구로 전환
-- 60초 대본 입력 → 씬 단위 자동 파싱 (최소 3개, 최대 10개 씬)
-- 각 씬별 EN 이미지 프롬프트 + 모션 프롬프트 + 공통 스타일 접미사
-- 상세도 조절 (최소/보통/상세) 선택 시 프롬프트 길이 변경
-- 각 프롬프트에 카피 버튼 + "전체 복사" 버튼
-- **UI 간소화:** 과도한 레이아웃/설명 텍스트 불필요. 기능만 정확히 동작하면 됨
+- 콘텐츠 코어 입력 → 롱폼 원고 생성 (mc 깊이단계 구조: 기초=인지/응용=비교고려/고급=결정구매, 니치 스키마 톤·금기어 반영, 분량 목표 1500~3000자)
+- 롱폼 원고 상단에 제휴 고지 삽입 (legal.disclosureText 반영)
+- 주제 브릿지 인터페이스: mc 블로그 체인 주제 목록 조회 + 사용자 선택 (시드 키워드 + 깊이단계 소제목 + 니치 태그 표시)
+- 선택된 주제 → 콘텐츠 코어 초안 자동 적재 (concept, depth, niche까지. price/competitor/reviews는 "수동 입력 필요"로 명시)
+- 주제 브릿지 1단계는 수동 입력/URL 입력으로 시작 (옵션 C). 정적 YAML 카탈로그(옵션 A)는 후속.
+- **미결정:** mc 체인 DB 경로/스키마 버전 확인 전까지 BRIDGE-01은 인터페이스 정의 + 목업 데이터로 검증
+- **v1 무손상:** 기존 렌더러 영향 없음
 
 **Parallelization:**
-- Wave 1 (default): template-video.js (씬 파싱 + 프롬프트 생성), video-ui.js (영상 소스 UI — 최소한의 스타일링)
-- Wave 2 (after wave 1): app.js에 탭 전환 로직, 카피 버튼
+- Wave 1 (default): 롱폼 렌더러(LONGFORM-01, LONGFORM-02)
+- Wave 1: 주제 브릿지 인터페이스(BRIDGE-01, BRIDGE-02, BRIDGE-03) — 롱폼과 병렬 가능
 
 **Agent Verification (After):**
-- gsd-verifier: "영상 소스 생성기가 동작하는가?" → 대본 입력 → 씬 파싱 → EN 프롬프트 생성 확인
-- gsd-ui-checker: 탭 전환, 상세도 조절, 카피 버튼 동작 확인
+- gsd-verifier: "롱폼 원고가 깊이단계 구조로 생성되는가?" → 기초/응용/고급 섹션 확인
+- gsd-verifier: "롱폼 상단에 제휴 고지가 삽입되는가?" → legal.disclosureText 반영 확인
+- gsd-verifier: "주제 브릿지에서 mc 체인 주제를 선택·적재할 수 있는가?" → 인터페이스 동작 확인 (목업 데이터 가능)
 
 ---
 
-## Phase 6: 두 도구 연결 + 통합 테스트 + Vercel 배포
+## Phase 5: 렌더링 파이프라인 완성
 
-**Goal:** 전략 제안서 생성기와 영상 소스 생성기가 연결되어("2번으로 보내기") 자동 전달되고, 전체 플로우 통합 테스트 후 Vercel에 배포됨
+**Goal:** Phase 2에서 "준비 완료" 상태로 저장된 쇼츠 자산(대본, 씬별 프롬프트, TTS, 이미지)을 받아 Whisper 자막 생성 → moviepy 렌더링 → 썸네일 생성까지 완성하고, 전체 파이프라인을 Job-status 폴링 패턴으로 관리한다. (v1 benchmark.js의 KV 스테이지 머신 패턴을 재사용)
 
-**Requirements:** R19, R20, R21, R22
+**Requirements:** RENDER-01, RENDER-02, RENDER-03, RENDER-04
 
 **Success Criteria:**
-- "2번으로 보내기" 버튼 클릭 시 기획안 결과가 영상 소스 생성기에 자동 전달
-- 탭 전환 시 기존 입력/결과 유지 (상태 보존)
-- Vercel 배포 성공 (정적 + 서버리스 함수)
-- 수동 모드 E2E: 입력 → 프롬프트 생성 → 복사 → (수동 Claude) → 결과
-- 자동 모드 E2E: 입력 → API 호출 → 결과 → "2번으로 보내기" → 영상 소스 생성
-- PDF 다운로드 동작 확인 (일반 PDF + 제안서 PDF)
-- **고객 공유 링크 개념 추가 검토:** 제안서 PDF를 URL로 공유할 수 있는 기능 (선택 사항, 배포 시점에 판단)
+- Phase 2의 audio/*.mp3 → Whisper small 모델로 장면별 SRT 자막 생성 → `content/campaigns/{campaignId}/shorts/subtitles/*.srt` 저장 (한국어)
+- scene별 이미지 + TTS + 자막 → moviepy 렌더링: 12fps/1920x1080/Ken Burns 확대(1.0→1.06)/PIP 실사 인서트(우하단 무레이블 테두리)/2줄 자막/0.5초 크로스디졸브 → `output/vox_content_final.mp4`
+- 썸네일 생성: assets/prompts/thumbnail_prompt.md 기반 이미지 + make_thumbnail.py 텍스트 오버레이 (이모지 금지)
+- 쇼츠 파이프라인 Job-status 폴링 패턴 적용 (v1 benchmark.js KV 스테이지 머신 패턴 재사용, 전체 3~15분 소요 대비)
+- **v1 무손상:** benchmark.js 패턴 재사용이지 수정이 아님. 기존 benchmark 탭 영향 없음
+- **미결정:** 렌더링 원격 실행 환경(Render/Fly.io/로컬) 최종 선택 전 — RENDER-02 실제 배포 방식은 환경 결정 후 확정
 
 **Parallelization:**
-- Wave 1 (default): state-manager.js (전역 상태 관리 + 탭 간 전달), vercel.json 업데이트
-- Wave 2 (after wave 1): 통합 E2E 테스트, 배포 스크립트
+- Wave 1 (default): Whisper 자막(RENDER-01) + moviepy 렌더링(RENDER-02) — 순차 의존 (자막 → 렌더링)
+- Wave 2 (after wave 1): 썸네일(RENDER-03) + Job-status 폴링(RENDER-04)
 
 **Agent Verification (After):**
-- gsd-verifier: "전체 플로우가 동작하는가?" → 기획안 생성 → 2번으로 보내기 → 영상 소스 생성 확인
-- gsd-ui-checker: 탭 전환 상태 보존, 배포 URL 접근 확인
+- gsd-verifier: "Whisper로 한국어 자막이 생성되는가?" → SRT 파일 존재 + 내용 확인
+- gsd-verifier: "moviepy 렌더링 결과물이 생성되는가?" → mp4 파일 존재 + 스펙(12fps/1920x1080) 확인
+- gsd-verifier: "썸네일이 생성되는가?" → thumbnail 파일 존재 확인
+- gsd-verifier: "Job-status 폴링 패턴이 적용되는가?" → benchmark.js 패턴 재사용 확인
 
 ---
 
-## Phase 7: 벤치마킹 대본 분석기 (Benchmark Script Analyzer)
+## Phase 6: 법적 컴플라이언스 + 과장 필터
 
-> 추가 일자: 2026-08-01
-> ⚠️ Phase 번호 정정: 초기 논의에서 "Phase 6"으로 언급되었으나 Phase 6(두 도구 연결+배포)이 이미 존재하여 **Phase 7**로 확정. Phase 3 Wave 2 진행 파일과 독립된 새 Phase (순수 추가, additive).
+**Goal:** 4개 포맷 각각에 제휴 고지 위치를 정의하고, 영상 내 고지 자막 최소 3초 표시 규칙을 반영하며, 과장 표현 필터(금기어 검사 + 심각도별 위반 목록 + 제안)를 구현하고, 니치 스키마 기반 금기어/제한 규칙을 적용한다. 제휴 고지문은 하드코딩하지 않고 사용자 직접 입력으로 남긴다.
 
-**Goal:** 인스타그램 계정을 입력하면 5단계 파이프라인(크롤링 → 바이럴 필터링 → Whisper 전사 → 공통 구조 해부 → 새 대본 재조립)이 동작하는 "벤치마킹 분석기" 탭을 추가한다. 기존 "전략 제안서 생성기"(Phase 3)와는 독립적으로 동작하되, 분석된 구조 데이터를 제안서 생성 플로우의 근거 자료로 가져다 쓸 수 있는 연동 포인트(구조 해부 JSON 형식 + KV 저장 위치)는 열어둔다 — **이번 Phase에서는 양방향 연동 구현 안 함**.
-
-**Requirements:** R28, R29, R30, R31, R32, R33, R34, R35
+**Requirements:** LEGAL-01, LEGAL-02, LEGAL-03, LEGAL-04, LEGAL-05
 
 **Success Criteria:**
-- "벤치마킹 분석기" 탭이 기존 2개 탭(proposal/video)과 함께 표시되고 전환 동작
-- IG 계정 URL/아이디 입력 → **(a) 바이럴 릴스 리스트(조회수 포함)** 출력
-- **(b) 각 릴스 전사 대본** 출력 (OpenAI Whisper, 한국어)
-- **(c) 공통 구조 해부 분석(훅/전개/클로징)** 출력 (Claude, segment 타임스탬프 기반)
-- **(d) 분석 구조 기반 새 대본 초안** 출력 (사용자 입력 키워드/브랜드 반영)
-- Apify/Whisper/Claude 호출이 **Vercel 타임아웃 없이** 완료 (job-status 폴링 패턴)
-- "분석할 릴스 개수" 상한(`MAX_ANALYZE_REELS=5`)이 **서버 강제**로 적용되어 비용 통제
-- 기존 proposal/video 탭 무손상 (additive 원칙 — 기존 파일 수정 최소화)
+- 4개 포맷별 제휴 고지 위치 정의 (쇼츠: 영상 자막+설명란 / 카드뉴스: 마지막 슬라이드 / 인포그래픽: 이미지 하단+캡션 / 롱폼: 원고 상단)
+- 고지 문구 템플릿이 legal.affiliateType에 따라 자동 선택됨 (템플릿은 안내 역할, 실제 문구는 legal.disclosureText 사용자 입력)
+- 영상 내 고지 자막 최소 3초 표시 규칙 적용 (vox-content 자막 2줄 순차 규칙과 정합)
+- 과장 표현 필터: 금기어(restrictions.avoidWords) 포함 검사 + 심각도별(critical/warning/info) 위반 목록 + 각 위반별 제안 반환
+- 니치 스키마 기반 금기어/제한 규칙 적용 (restrictions.avoidWords, avoidPhrases, claimLimits)
+- 제휴 고지문 하드코딩 금지 — legal.disclosureText 사용자 직접 입력 + "최신 약관 확인 필요" 안내
+- **미결정:** 실제 다룰 제휴 프로그램(쿠팡파트너스/브랜드커넥스/기타) 확정 전 — LEGAL-01/02/05 상세 문구는 프로그램 확정 후 보완
+- **v1 무손상:** 기존 필터/검증 로직 영향 없음 (신규 모듈)
 
 **Parallelization:**
-- Wave 1 (default): `api/benchmark.js` — KV job-status 스테이지 머신 (POST job 생성 + Apify run 시작 / GET 폴링: crawling→transcribing→analyzing→done), 서버 상수로 비용 상한 강제
-- [체크포인트] 사용자 수동: `APIFY_API_TOKEN`, `OPENAI_API_KEY` 발급/설정 (실 API E2E 전 필수)
-- Wave 2 (after wave 1): `benchmark-analyzer.js` (신규 탭 UI + 폴링 + 결과 렌더링), index.html 탭 버튼/컨테이너, state-manager.js 최소 확장, style.css 추가
-- Wave 3 (after wave 1): vercel.json `maxDuration: 300` + env 블록, ENVIRONMENT-GUIDE.md APIFY/OPENAI 문서
+- Wave 1 (default): 고지 위치·문구 템플릿·자막 규칙(LEGAL-01, LEGAL-02, LEGAL-05)
+- Wave 1: 과장 필터 + 니치 규칙(LEGAL-03, LEGAL-04)
 
 **Agent Verification (After):**
-- gsd-verifier: "벤치마킹 분석기가 동작하는가?" → 탭 표시/전환, (a)~(d) 4종 결과, 타임아웃 없음, 상한 적용
-- gsd-ui-checker: 탭 전환, 진행 스테이퍼, 결과 카드 레이아웃, 카피 버튼 동작
+- gsd-verifier: "4개 포맷별 고지 위치가 정의되는가?" → LEGAL-01 확인
+- gsd-verifier: "영상 고지 자막 최소 3초 규칙이 적용되는가?" → LEGAL-02 확인
+- gsd-verifier: "과장 필터가 금기어 검사 + 심각도별 목록을 반환하는가?" → LEGAL-03 확인
+- gsd-verifier: "니치별 금기어/제한이 적용되는가?" → LEGAL-04 확인
+- gsd-verifier: "제휴 고지문이 하드코딩되지 않았는가?" → LEGAL-05 확인
+
+---
+
+## 미결정 (로드맵 범위 밖 — 후속 보완)
+
+- **렌더링 원격 환경 선택:** Render/Fly.io/로컬 중 최종 선택 → Phase 5 RENDER-02 실제 배포 방식
+- **제휴 프로그램 확정:** 쿠팡파트너스/브랜드커넥스/기타 → Phase 6 LEGAL-01/02/05 상세 문구
+- **Pixabay API 키:** 무료 티어 존재 여부 확인 → Phase 2 SHORTS-03 구현 전
+- **mc 체인 DB:** 경로/스키마 버전 확인 → Phase 4 BRIDGE-01 구현 전
+- **니치 목록 범위:** 첫 출시 니치 몇 개로 시작? → Phase 4/6 착수 전 결정
+- **콘텐츠 코어 저장 방식 확장:** 파일 기반 → 향후 KV/DB 전환 시점
+
+---
+
+## Progress
+
+| Phase | Milestone | Plans | Status | Completed |
+|-------|-----------|-------|--------|-----------|
+| 1. 콘텐츠 코어 확장 + 파일 저장 | v2.0 | 0/1 | Not started | — |
+| 2. 쇼츠 렌더러 | v2.0 | 0/1 | Not started | — |
+| 3. 카드뉴스 + 인포그래픽 렌더러 | v2.0 | 0/1 | Not started | — |
+| 4. 롱폼 렌더러 + 주제 브릿지 | v2.0 | 0/1 | Not started | — |
+| 5. 렌더링 파이프라인 완성 | v2.0 | 0/1 | Not started | — |
+| 6. 법적 컴플라이언스 + 과장 필터 | v2.0 | 0/1 | Not started | — |
+
+---
+
+*Roadmap created: 2026-08-09*  
+*Last updated: 2026-08-09 after v2.0 milestone start*
