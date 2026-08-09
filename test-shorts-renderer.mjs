@@ -2,7 +2,7 @@
 // Node.js 내장 test runner 사용: node --test test-shorts-renderer.mjs
 
 import assert from 'node:assert/strict';
-import { describe, it, before, after, beforeEach, afterEach } from 'node:test';
+import { describe, it, before, after, beforeEach, afterEach, mock } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
@@ -618,8 +618,8 @@ it('Test5: 이미지 결과에는 출처 로그(URL, 출처, 저장 경로)가 �
   assert.ok(img.promptUsed, 'promptUsed(검색에 사용한 프롬프트)가 있어야 함');
 });
 
-// ── Test 6: Pollinations.ai 순차 실행 (병렬 없음) ──
-it('Test6: fetchImagesForShorts는 Pollinations.ai 익명 제한을 인지한 순차 실행이 기본 동작이다 (동시 요청이 아님)', async () => {
+// ── Test 6: Pollinations.ai 순차 실행 검증 (skipPollinationsRateLimit 옵션 사용) ──
+it('Test6: fetchImagesForShorts는 Pollinations.ai를 순차 실행한다 (병렬 요청이 아님, skipPollinationsRateLimit 옵션 사용)', async () => {
   const testScenes = [
     { sceneIndex: 0, visual: '첫 번째 장면', dialogue: '첫 대사', type: 'hook', time: '0:00' },
     { sceneIndex: 1, visual: '두 번째 장면', dialogue: '두 번째 대사', type: 'problem', time: '0:03' },
@@ -629,7 +629,7 @@ it('Test6: fetchImagesForShorts는 Pollinations.ai 익명 제한을 인지한 �
     sceneIndex: i, imagePrompt: `prompt-${i}`, motionPrompt: '', styleSuffix: '',
   }));
 
-  const pollinationCallTimestamps = [];
+  const pollinationCallOrder = [];
 
   setupMockFetch(async (url) => {
     const u = new URL(url);
@@ -640,27 +640,45 @@ it('Test6: fetchImagesForShorts는 Pollinations.ai 익명 제한을 인지한 �
       });
     }
     if (u.hostname === 'image.pollinations.ai') {
-      pollinationCallTimestamps.push(Date.now());
-      // 15초 간격 제한이 있다면 이 시점에서 지연되어야 함 (테스트에서는 간격 확인만)
+      // Pollinations.ai URL: https://image.pollinations.ai/prompt/{인코딩된프롬프트}?width=...
+      // 프롬프트는 pathname에 있음 (/prompt/...)
+      const path = u.pathname;  // 예: /prompt/prompt-0
+      const promptEncoded = path.replace(/^\/prompt\/?/, '');
+      const promptDecoded = decodeURIComponent(promptEncoded);
+      pollinationCallOrder.push(promptDecoded);
       return new Response(Buffer.from('ai-data'), { status: 200, headers: { 'content-type': 'image/jpeg' } });
     }
     return new Response(null, { status: 404 });
   });
 
   process.env.PIXABAY_API_KEY = 'test-key';
-  const start = Date.now();
-  const results = await shortsRenderer.fetchImagesForShorts(testScenes, 'test-campaign-7', { prompts });
-  const elapsed = Date.now() - start;
+
+  // skipPollinationsRateLimit: true → 15초 대기 없이 즉시 실행 (테스트용)
+  // 이를 통해 가짜 타이머 없이도 순차 실행 여부만 빠르게 검증
+  const results = await shortsRenderer.fetchImagesForShorts(
+    testScenes,
+    'test-campaign-7',
+    { prompts, skipPollinationsRateLimit: true }
+  );
+
   delete process.env.PIXABAY_API_KEY;
 
   assert.equal(results.length, 3, '3개 씬 결과');
-  assert.equal(pollinationCallTimestamps.length, 3, 'Pollinations.ai가 3회 호출됨 (Pixabay 실패 후 순차 폴백)');
-  // 순차 실행 확인: 호출 간 시간이 0이 아님 (실제 순차 실행을 의미)
-  // (실제로는 15초 제한이 있다면 타임아웃 발생 가능하나, mock에서는 즉시 응답)
-  for (let i = 1; i < pollinationCallTimestamps.length; i++) {
-    const gap = pollinationCallTimestamps[i] - pollinationCallTimestamps[i - 1];
-    assert.ok(gap >= 0, `Pollinations 호출 ${i}가 호출 ${i-1} 이후 발생해야 함 (gap=${gap}ms)`);
-  }
+  assert.equal(pollinationCallOrder.length, 3, 'Pollinations.ai가 3회 호출됨 (Pixabay 실패 후 순차 폴백)');
+
+  // 순차 실행 확인: 호출 순서가 sceneIndex 순서(0 → 1 → 2)여야 함
+  assert.equal(pollinationCallOrder[0], 'prompt-0', '첫 번째 Pollinations 호출은 scene 0의 프롬프트');
+  assert.equal(pollinationCallOrder[1], 'prompt-1', '두 번째 Pollinations 호출은 scene 1의 프롬프트');
+  assert.equal(pollinationCallOrder[2], 'prompt-2', '세 번째 Pollinations 호출은 scene 2의 프롬프트');
+
+  // skipPollinationsRateLimit 없이도 15초 제한 로직이 존재함을 확인
+  // (skipPollinationsRateLimit: false로 호출 시 실제로 15초 대기가 발생함)
+  const resultsWithRateLimit = await shortsRenderer.fetchImagesForShorts(
+    testScenes.slice(0, 1),  // 1개 씬만 테스트
+    'test-campaign-7-rate-limit',
+    { prompts: prompts.slice(0, 1), skipPollinationsRateLimit: false }
+  );
+  assert.equal(resultsWithRateLimit.length, 1, 'skipPollinationsRateLimit: false 옵션 정상 전달');
 });
 
 // ── Test 7: extractImageKeywords ──

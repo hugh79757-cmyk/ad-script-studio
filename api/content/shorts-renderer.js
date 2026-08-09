@@ -720,21 +720,23 @@ export function extractImageKeywords(visual, dialogue) {
 /**
  * 쇼츠 씬 전체에 대해 이미지를 가져온다.
  * Pixabay(실사) 우선 → 실패 시 Pollinations.ai(Flux) 폴백.
- * Pollinations.ai 익명 제한을 인지한 순차 실행.
+ * Pollinations.ai 익명 제한(15초당 1회)을 준수한 순차 실행.
  *
  * @param {Object[]} scenes - parseShortsScenes() 결과 씬 배열
  * @param {string} campaignId - 캠페인 ID
- * @param {Object} [options={}] - { prompts?: prompts[], pollinationsApiKey?: string }
+ * @param {Object} [options={}] - { prompts?: prompts[], pollinationsApiKey?: string, skipPollinationsRateLimit?: boolean }
  * @returns {Promise<Object[]>} 이미지 결과 배열
  */
 export async function fetchImagesForShorts(scenes, campaignId, options = {}) {
-  const { prompts = [], pollinationsApiKey } = options;
+  const { prompts = [], pollinationsApiKey, skipPollinationsRateLimit } = options;
 
   if (!isValidCampaignId(campaignId)) {
     return [{ success: false, error: 'Invalid campaignId', sceneIndex: -1, source: 'images' }];
   }
 
   const results = [];
+  let lastPollinationsCallAt = 0;  // 마지막 Pollinations.ai 호출 시각 (ms)
+  const POLLINATIONS_MIN_INTERVAL_MS = 15_000;  // 15초 최소 간격
 
   for (let i = 0; i < scenes.length; i++) {
     const scene = scenes[i];
@@ -766,14 +768,29 @@ export async function fetchImagesForShorts(scenes, campaignId, options = {}) {
       // Pixabay 실패 → 폴백 실행 (오류 기록)
     }
 
-    // 2) Pollinations.ai 폴백
+    // 2) Pollinations.ai 폴백 (15초당 1회 제한 준수)
     const imagePrompt = (prompts[i] && prompts[i].imagePrompt) || visual || dialogue || 'product';
+
+    // Pollinations.ai 익명 제한: 15초당 1회 → 호출 간 최소 15초 대기
+    // skipPollinationsRateLimit 옵션이 true이면 대기 없이 즉시 실행 (테스트용)
+    if (!skipPollinationsRateLimit) {
+      const now = Date.now();
+      const elapsedSinceLastPollination = now - lastPollinationsCallAt;
+      if (lastPollinationsCallAt > 0 && elapsedSinceLastPollination < POLLINATIONS_MIN_INTERVAL_MS) {
+        const waitMs = POLLINATIONS_MIN_INTERVAL_MS - elapsedSinceLastPollination;
+        await new Promise(resolve => setTimeout(resolve, waitMs));
+      }
+    }
+
     const pollResult = await fetchPollinationsImage(
       imagePrompt,
       campaignId,
       i,
       pollinationsApiKey ? { apiKey: pollinationsApiKey } : {}
     );
+
+    // 마지막 호출 시각 업데이트
+    lastPollinationsCallAt = Date.now();
 
     if (pollResult.success) {
       results.push({
@@ -927,6 +944,52 @@ export async function generateTTSForScene(dialogue, campaignId, sceneIndex, opti
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 고지 템플릿 (affiliateType별)
+// LEGAL_COMPLIANCE.md 확정 문구 기반
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * 제휴 프로그램별 고지 문구 템플릿.
+ * 콘텐츠 코어의 legal.affiliateType에 따라 자동 선택됨.
+ * 사용자가 legal.disclosureText를 직접 지정한 경우 해당 텍스트가 우선됨.
+ *
+ * @param {Object} legal - 콘텐츠 코어의 legal 필드
+ * @param {string} format - 'videoSubtitle' | 'description' (포맷별 문구 선택)
+ * @returns {string} 고지 문구 (고지가 필요 없으면 빈 문자열)
+ */
+function getDisclosureText(legal, format = 'description') {
+  const affiliateType = (legal && legal.affiliateType) || '없음';
+  const userDisclosure = (legal && legal.disclosureText) || '';
+
+  // 사용자가 수동 고지 문구를 지정한 경우 → 해당 텍스트 반환 (포맷 관계없이 동일)
+  if (userDisclosure.trim()) {
+    return userDisclosure.trim();
+  }
+
+  // 제휴 프로그램이 없으면 고지 불필요
+  if (affiliateType === '없음' || !affiliateType) {
+    return '';
+  }
+
+  // 쿠팡파트너스 고지 템플릿 (LEGAL_COMPLIANCE.md 확정 문구)
+  if (affiliateType === 'coupang_partners') {
+    if (format === 'videoSubtitle') {
+      // 쇼츠 자막용: "이 영상은..." (영상 콘텐츠용)
+      return '이 영상은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.';
+    }
+    // 설명란/기타용: "이 포스팅은..." (텍스트 콘텐츠용 기본)
+    return '이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.';
+  }
+
+  // 기타 제휴 프로그램: 기본 고지 문구 (추후 확장)
+  // 현재는 쿠팡파트너스만 확정, 나머지는 일반 고지 문구 사용
+  if (format === 'videoSubtitle') {
+    return '이 영상은 제휴 마케팅 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.';
+  }
+  return '이 콘텐츠는 제휴 마케팅 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.';
+}
+
 /**
  * 렌더링 준비 완료 객체를 조립한다.
  *
@@ -940,7 +1003,13 @@ export async function generateTTSForScene(dialogue, campaignId, sceneIndex, opti
  */
 export function assembleRenderReady(core, scenes, prompts, images, audioResults, options = {}) {
   const campaignId = (core && core.campaignId) || 'unknown';
-  const disclosureText = (core && core.legal && core.legal.disclosureText) || '';
+  const legal = (core && core.legal) || {};
+
+  // affiliateType별 고지 템플릿 자동 생성
+  // videoSubtitle: 쇼츠 자막용 (영상 내 표시됩니다)
+  // description: 쇼츠 설명란용 (YouTube 설명란 등에 표시됩니다)
+  const disclosureVideoSubtitle = getDisclosureText(legal, 'videoSubtitle');
+  const disclosureDescription = getDisclosureText(legal, 'description');
 
   return {
     renderStatus: 'ready-for-moviepy',
@@ -993,8 +1062,8 @@ export function assembleRenderReady(core, scenes, prompts, images, audioResults,
       dialogue: a.dialogue || null,
     })),
     disclosure: {
-      videoSubtitle: disclosureText,
-      description: disclosureText,
+      videoSubtitle: disclosureVideoSubtitle,
+      description: disclosureDescription,
     },
     nextStep: {
       action: '로컬에서 scripts/shorts/render_video.py 실행 또는 Phase 5 파이프라인으로 이동',
@@ -1167,7 +1236,7 @@ export function copyAll(renderReady) {
  * @returns {Promise<Object>} { success, renderReady?, path?, error? }
  */
 export async function generateShorts(core, campaignId, options = {}) {
-  const { duration = 60, detailLevel = '보통', pollinationsApiKey } = options;
+  const { duration = 60, detailLevel = '보통', pollinationsApiKey, scriptOnly } = options;
 
   // 1. 유효성 검사
   if (!core || typeof core !== 'object') {
@@ -1195,40 +1264,43 @@ export async function generateShorts(core, campaignId, options = {}) {
   // 5. 이미지 프롬프트 생성
   const prompts = generateShortsPrompts(parsedScenes, detailLevel);
 
-  // 6. 이미지 fetch (시간 소요 — Vercel timeout 주의)
-  // 이미지 fetch는 선택적 단계: 실패해도 계속 진행
+  // 6. 이미지 fetch — scriptOnly 모드에서는 스킵
   let images = [];
-  try {
-    images = await fetchImagesForShorts(parsedScenes, campaignId, { prompts, pollinationsApiKey });
-  } catch (imgErr) {
-    // 이미지 fetch 전체 실패 시 빈 배열로 진행
-    images = parsedScenes.map((_, i) => ({
-      sceneIndex: i,
-      status: 'failed',
-      imagePath: null,
-      sourceUrl: null,
-      source: null,
-      promptUsed: prompts[i]?.imagePrompt || null,
-      error: `Image fetch failed: ${imgErr.message || String(imgErr)}`,
-    }));
+  if (!scriptOnly) {
+    try {
+      images = await fetchImagesForShorts(parsedScenes, campaignId, { prompts, pollinationsApiKey });
+    } catch (imgErr) {
+      // 이미지 fetch 전체 실패 시 빈 배열로 진행
+      images = parsedScenes.map((_, i) => ({
+        sceneIndex: i,
+        status: 'failed',
+        imagePath: null,
+        sourceUrl: null,
+        source: null,
+        promptUsed: prompts[i]?.imagePrompt || null,
+        error: `Image fetch failed: ${imgErr.message || String(imgErr)}`,
+      }));
+    }
   }
 
-  // 7. TTS 생성 (각 씬별 순차 실행 — Vercel에서 edge-tts 불안정 가능성)
+  // 7. TTS 생성 — scriptOnly 모드에서는 스킵
   const audioResults = [];
-  for (let i = 0; i < parsedScenes.length; i++) {
-    const dialogue = parsedScenes[i].dialogue || '';
-    try {
-      const result = await generateTTSForScene(dialogue, campaignId, i);
-      audioResults.push(result);
-    } catch (ttsErr) {
-      audioResults.push({
-        success: false,
-        error: `TTS error: ${ttsErr.message || String(ttsErr)}`,
-        sceneIndex: i,
-        voice: 'ko-KR-SunHiNeural',
-        dialogue: dialogue || null,
-        status: 'failed',
-      });
+  if (!scriptOnly) {
+    for (let i = 0; i < parsedScenes.length; i++) {
+      const dialogue = parsedScenes[i].dialogue || '';
+      try {
+        const result = await generateTTSForScene(dialogue, campaignId, i);
+        audioResults.push(result);
+      } catch (ttsErr) {
+        audioResults.push({
+          success: false,
+          error: `TTS error: ${ttsErr.message || String(ttsErr)}`,
+          sceneIndex: i,
+          voice: 'ko-KR-SunHiNeural',
+          dialogue: dialogue || null,
+          status: 'failed',
+        });
+      }
     }
   }
 
