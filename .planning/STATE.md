@@ -3,14 +3,14 @@ gds_state_version: 1.0
 milestone: v2.0
 milestone_name: 원소스 멀티유즈 콘텐츠 시스템
 status: executing
-last_updated: "2026-08-09T15:46:00.000Z"
+last_updated: "2026-08-09T16:45:00.000Z"
 last_activity: 2026-08-09
 progress:
-  total_phases: 1
+  total_phases: 2
   completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-  percent: 100
+  total_plans: 2
+  completed_plans: 0
+  percent: 50
 ---
 
 # STATE — AD SCRIPT STUDIO
@@ -20,9 +20,9 @@ progress:
 | Field | Value |
 |-------|-------|
 | Version | v2.0 (실행 중) |
-| Phases | 6 (Phase 1 완료, Phase 2~6 예정) |
-| Current Phase | Phase 2 (쇼츠 렌더러) |
-| Status | 🟢 **Phase 1 완료 — 콘텐츠 코어 스키마 + 저장/불러오기/목록 조회 + 변환 함수 구현** |
+| Phases | 6 (Phase 1 완료, Phase 2 진행 중, Phase 3~6 예정) |
+| Current Phase | Phase 2 (쇼츠 렌더러) — 진행 중 |
+| Status | 🟡 **Phase 2 진행 중 — shorts-renderer.js 구현 완료, 테스트 27/32 통과, 4개 구현 버그 수정 필요** |
 
 ## Milestone v2 Goals
 
@@ -98,6 +98,7 @@ dc4852d docs: initialize GSD planning for AD SCRIPT STUDIO
 
 | Version | Date | Notes |
 |---------|------|-------|
+| v2-phase2-task1 | 2026-08-09 | Phase 2 Task1 완료: api/content/shorts-renderer.js (대본 생성, 씬 파싱, 이미지 프롬프트, 축약 함수) + test-shorts-renderer.mjs (Task1~5 테스트). Commit: a7004bf. Task2~5 테스트 수정 중 (27/32 통과). |
 | v2-phase1-done | 2026-08-09 | Phase 1 완료: api/content/core.js (CORE_SCHEMA 7그룹·30+필드 + saveCore/loadCore/listCampaigns/validateCore/fromAppState/toAppState), content/campaigns/.gitkeep, test-content-core.mjs (104 assertions). v1 무손상 확인. Commit: 9440ed7. |
 | v1-refactor | 2026-07-31 | 리팩터링: 전략 제안서 중심 재정의. Phase 3 핵심 격상. R23-R27 신규. Requirements 22→27. |
 | v1-phase2-plan | 2026-07-31 | Phase 2 플랜 생성: template-plan.js, pdf.js, app.js 업데이트. Wave 1 (단일 웨이브). |
@@ -119,7 +120,7 @@ dc4852d docs: initialize GSD planning for AD SCRIPT STUDIO
 
 ## Current Position
 
-Phase: Phase 1 (완료)
-Plan: 01-content-core (완료)
-Status: Phase 2 시작 가능 — 쇼츠 렌더러
-Last activity: 2026-08-09 — Phase 1 완료 (104/104 테스트 통과, v1 무손상)
+Phase: Phase 2 (진행 중)
+Plan: 02-01-shorts-renderer (진행 중 — 27/32 테스트 통과)
+Status: 구현 버그 수정 필요 — 4개 테스트 실패 (fetchPollinationsImage, fetchImagesForShorts, extractImageKeywords, purpose.stage CTA 차별화)
+Last activity: 2026-08-09 — Phase 2 Task1 커밋 완료, Task2~5 테스트 작성 및 수정 중
