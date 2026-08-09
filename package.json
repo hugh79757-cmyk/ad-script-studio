@@ -2,6 +2,7 @@
   "name": "ad-script-studio",
   "version": "1.0.0",
   "description": "전략 제안서 생성기 + 영상 소스 생성기",
+  "type": "module",
   "scripts": {
     "deploy": "vercel --prod",
     "deploy:preview": "vercel",
