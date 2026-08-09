@@ -26,6 +26,11 @@
 - Wave 1 (default): core.yaml 스키마 정의, 저장/불러오기/목록 조회 함수, fromAppState/toAppState 변환
 - Wave 1: depth.basic/applied/advanced 소구점 필드 + purpose.stage enum
 
+**Plans:**
+- [x] 01-content-core-01-PLAN.md — 콘텐츠 코어 YAML 스키마 정의 + 저장/불러오기/목록 조회
+- [x] 01-content-core-02-PLAN.md — fromAppState/toAppState 변환 함수 + 검증
+- [x] 01-content-core-03-PLAN.md — 통합 검증 테스트 + v1 무손상 확인
+
 **Agent Verification (After):**
 - gsd-verifier: Goal-backward — "콘텐츠 코어가 저장·불러오기·목록 조회되는가?" → campaignId 지정 후 core.yaml 생성·파싱·목록 확인
 - gsd-verifier: "v1 appState → 콘텐츠 코어 변환이 동작하는가?" → v1 상태 값으로 fromAppState 호출 후 필드 매핑 확인
@@ -185,7 +190,7 @@
 
 | Phase | Milestone | Plans | Status | Completed |
 |-------|-----------|-------|--------|-----------|
-| 1. 콘텐츠 코어 확장 + 파일 저장 | v2.0 | 0/1 | Not started | — |
+| 1. 콘텐츠 코어 확장 + 파일 저장 | v2.0 | 3/3 | Planned | — |
 | 2. 쇼츠 렌더러 | v2.0 | 0/1 | Not started | — |
 | 3. 카드뉴스 + 인포그래픽 렌더러 | v2.0 | 0/1 | Not started | — |
 | 4. 롱폼 렌더러 + 주제 브릿지 | v2.0 | 0/1 | Not started | — |
