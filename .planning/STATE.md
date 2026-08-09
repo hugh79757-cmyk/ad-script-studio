@@ -1,16 +1,16 @@
 ---
-gsd_state_version: 1.0
+gds_state_version: 1.0
 milestone: v2.0
 milestone_name: 원소스 멀티유즈 콘텐츠 시스템
-status: planning
-last_updated: "2026-08-09T08:41:54.284Z"
+status: executing
+last_updated: "2026-08-09T15:46:00.000Z"
 last_activity: 2026-08-09
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 1
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
+  percent: 100
 ---
 
 # STATE — AD SCRIPT STUDIO
@@ -19,10 +19,10 @@ progress:
 
 | Field | Value |
 |-------|-------|
-| Version | v2.0 (계획 중) |
-| Phases | 6 (Phase 1~6, 계획 예정) |
-| Current Phase | — (요구사항 정의 완료, 플랜 시작 전) |
-| Status | 🟡 **v2 마일스톤 초기 — 리서치 + 요구사항 정의 완료, ROADMAP 작성 전** |
+| Version | v2.0 (실행 중) |
+| Phases | 6 (Phase 1 완료, Phase 2~6 예정) |
+| Current Phase | Phase 2 (쇼츠 렌더러) |
+| Status | 🟢 **Phase 1 완료 — 콘텐츠 코어 스키마 + 저장/불러오기/목록 조회 + 변환 함수 구현** |
 
 ## Milestone v2 Goals
 
@@ -98,7 +98,7 @@ dc4852d docs: initialize GSD planning for AD SCRIPT STUDIO
 
 | Version | Date | Notes |
 |---------|------|-------|
-| v1 | 2026-07-31 | Planning complete; implementation pending |
+| v2-phase1-done | 2026-08-09 | Phase 1 완료: api/content/core.js (CORE_SCHEMA 7그룹·30+필드 + saveCore/loadCore/listCampaigns/validateCore/fromAppState/toAppState), content/campaigns/.gitkeep, test-content-core.mjs (104 assertions). v1 무손상 확인. Commit: 9440ed7. |
 | v1-refactor | 2026-07-31 | 리팩터링: 전략 제안서 중심 재정의. Phase 3 핵심 격상. R23-R27 신규. Requirements 22→27. |
 | v1-phase2-plan | 2026-07-31 | Phase 2 플랜 생성: template-plan.js, pdf.js, app.js 업데이트. Wave 1 (단일 웨이브). |
 | v1-phase2-done | 2026-07-31 | Phase 2 구현 완료: template-plan.js, pdf.js, app.js 업데이트, index.html CDN 추가, style.css UI 스타일 추가. |
@@ -119,7 +119,7 @@ dc4852d docs: initialize GSD planning for AD SCRIPT STUDIO
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-08-09 — Milestone v2.0 started
+Phase: Phase 1 (완료)
+Plan: 01-content-core (완료)
+Status: Phase 2 시작 가능 — 쇼츠 렌더러
+Last activity: 2026-08-09 — Phase 1 완료 (104/104 테스트 통과, v1 무손상)
