@@ -204,13 +204,14 @@ describe('Task1: 대본 생성 + 씬 파싱 + EN 이미지 프롬프트 모듈',
       'closing 대본에 컨셉(9시 아침 피부)이 slogan으로 포함되어야 함');
   });
 
-  // ── Test 3: generateScriptOnly → v1 generateScript와 동일한 결과 ──
-  it('Test3: generateScriptOnly(core)는 template-plan.js의 generateScript() 결과를 그대로 반환한다 (v1 무손상 확인)', () => {
+  // ── Test 3: generateScriptOnly → v1 generateScript와 동일한 결과 (결정 stage) ──
+  it('Test3: generateScriptOnly(core)는 template-plan.js의 generateScript() 결과를 그대로 반환한다 (v1 무손상 확인, 결정 stage)', () => {
     const core = makeDummyCore({
       brandName: '테스트브랜드',
       productName: '테스트제품',
       concept: '테스트컨셉',
       targetDesc: '테스트타겟',
+      stage: '결정',  // 결정 stage는 v1 원본 CTA 템플릿을 그대로 사용
     });
 
     // v1 generateScript 직접 호출 (toAppState 변환 후)

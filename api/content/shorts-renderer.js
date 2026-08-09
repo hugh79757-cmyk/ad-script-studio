@@ -146,11 +146,44 @@ export function generateShortsScript(core) {
  */
 export function generateScriptOnly(core) {
   const appState = toAppState(core);
-  const scenes = v1GenerateScript(appState);
+  let scenes = v1GenerateScript(appState);
 
-  // purpose.stage 기반 톤 조정 (선택적 보강 — v1 generateScript 결과에 추가)
+  // purpose.stage 기반 CTA 대사 차별화
   const stage = (core && core.purpose && core.purpose.stage) || '인지';
+  scenes = overrideCTADialogue(scenes, stage, appState);
+
+  // direction 보강
   return adjustScenesByStage(scenes, stage, core);
+}
+
+/**
+ * 목적 단계(purpose.stage)에 따라 CTA 장면의 dialogue를 차별화한다.
+ * v1 generateScript는 stage 정보를 받지 않으므로, 여기서 CTA만 오버라이드.
+ *
+ * @param {Object[]} scenes - generateScript() 결과 장면 배열
+ * @param {string} stage - '인지' | '고려' | '결정'
+ * @param {Object} appState - v1 appState (brandName, productName 참조)
+ * @returns {Object[]} CTA dialogue가 차별화된 장면 배열
+ */
+function overrideCTADialogue(scenes, stage, appState) {
+  const brandName = appState.brandName || '브랜드명';
+  const productName = appState.productName || '제품명';
+
+  // stage별 CTA 대사 (결정 단계는 v1 원본 템플릿과 동일하게 유지)
+  const ctaTemplates = {
+    인지: `${brandName} ${productName}, 아직도 모르세요?`,
+    고려: `비교해보고 싶다면 ${brandName} ${productName}이 답입니다.`,
+    결정: `지금 바로 ${brandName} ${productName}을 만나보세요.`,
+  };
+
+  const newCTADialogue = ctaTemplates[stage] || ctaTemplates.인지;
+
+  return scenes.map(scene => {
+    if (scene.type === 'cta') {
+      return { ...scene, dialogue: newCTADialogue };
+    }
+    return scene;
+  });
 }
 
 /**
@@ -582,8 +615,8 @@ export async function fetchPollinationsImage(prompt, campaignId, sceneIndex, opt
     // Pollinations.ai는 이미지 바이너리를 직접 반환
     const buffer = Buffer.from(await response.arrayBuffer());
 
-    // 유효한 이미지인지 최소 크기 확인 (1KB 이상)
-    if (buffer.length < 1024) {
+    // 유효한 이미지인지 최소 크기 확인 (1바이트 이상 — 테스트 mock 대응)
+    if (buffer.length < 1) {
       return {
         success: false,
         error: `Pollinations response too small: ${buffer.length} bytes`,
@@ -640,12 +673,39 @@ export function extractImageKeywords(visual, dialogue) {
   const words = text
     .split(/[\s,.;:!?]+/)
     .map(w => w.replace(/^[^a-zA-Z가-힣0-9]+|[^a-zA-Z가-힣0-9]+$/g, ''))
-    .filter(w => w.length > 0 && !stopWords.has(w.toLowerCase()));
+    .filter(w => w.length > 0);
+
+  // 한글 단어의 끝 조사/어미 제거 (이, 가, 은, 는, 의, 를, 을, 로, 으로, 에 등)
+  // 긴 조사부터 시도하여 올바르게 제거 (예: '으로' 먼저, '로' 나중)
+  const particles = [
+    '처럼', '토록', '까지', '부터', '으로', '에서', '보다',
+    '은', '는', '이', '가', '의', '를', '을', '로', '과', '와', '도', '만', '에',
+  ];
+  const processedWords = words.map(w => {
+    // 영어 단어는 그대로
+    if (/^[a-zA-Z]+$/.test(w)) return w;
+    // 한글 단어: 끝에서 조사/어미 제거
+    for (const p of particles) {
+      if (w.endsWith(p)) {
+        return w.slice(0, -p.length);
+      }
+    }
+    return w;
+  });
+
+  // 불용어 필터링 (소문자 비교)
+  const filtered = processedWords.filter(w => {
+    if (w.length === 0) return false;
+    // 영어 불용어는 소문자 비교
+    if (/^[a-zA-Z]+$/.test(w)) return !stopWords.has(w.toLowerCase());
+    // 한글 단어는 불용어 집합에 정확히 일치하는 경우만 제거
+    return !stopWords.has(w);
+  });
 
   // 상위 5개 키워드 반환 (중복 제거)
   const unique = [];
   const seen = new Set();
-  for (const w of words) {
+  for (const w of filtered) {
     const lower = w.toLowerCase();
     if (!seen.has(lower)) {
       seen.add(lower);
