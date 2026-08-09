@@ -57,6 +57,9 @@
 - Wave 1: Pixabay 이미지(SHORTS-03) + Pollinations.ai(SHORTS-04) — 병렬 가능 (서로 독립)
 - Wave 2 (after wave 1): edge-tts TTS(SHORTS-05) + 렌더링 준비 완료 출력(SHORTS-06) + 카피 버튼(SHORTS-07)
 
+**Plans:**
+- [ ] 02-01-shorts-renderer.PLAN.md — 쇼츠 대본(SHORTS-01) + 씬 파싱/프롬프트(SHORTS-02) + Pixabay 이미지(SHORTS-03) + Pollinations.ai(SHORTS-04) + edge-tts TTS(SHORTS-05) + 렌더링 준비 완료 조립(SHORTS-06) + 카피 버튼(SHORTS-07) (5 tasks)
+
 **Agent Verification (After):**
 - gsd-verifier: "콘텐츠 코어 → 쇼츠 대본이 생성되는가?" → 코어 입력 후 대본 출력 확인
 - gsd-verifier: "씬별 EN 이미지 프롬프트가 생성되는가?" → 씬 파싱 결과 확인
@@ -189,7 +192,7 @@
 | Phase | Milestone | Plans | Status | Completed |
 |-------|-----------|-------|--------|-----------|
 | 1. 콘텐츠 코어 확장 + 파일 저장 | v2.0 | 1/1 | ✅ Completed | 2026-08-09 |
-| 2. 쇼츠 렌더러 | v2.0 | 0/1 | Not started | — |
+| 2. 쇼츠 렌더러 | v2.0 | 1/1 | Not started | — |
 | 3. 카드뉴스 + 인포그래픽 렌더러 | v2.0 | 0/1 | Not started | — |
 | 4. 롱폼 렌더러 + 주제 브릿지 | v2.0 | 0/1 | Not started | — |
 | 5. 렌더링 파이프라인 완성 | v2.0 | 0/1 | Not started | — |
