@@ -45,6 +45,27 @@ const GLOBAL_DEADLINE_MS = 260_000;
 const MIN_ATTEMPT_MS = 15_000;
 /** 한 provider가 아무리 느려도 이 값을 넘길 수 없음 (관찰된 정상 지연 최대 126s 여유분) */
 const PER_PROVIDER_CAP_MS = 150_000;
+/** 용량 초과·서비스 불가 응답 시 즉시 폴백으로 넘어가기 위한 대기 시간 (5초) */
+const FAIL_FAST_DELAY_MS = 5_000;
+
+// ============================================================================
+// Fail-fast: 용량 초과·서비스 불가 응답 판별
+// ============================================================================
+
+/**
+ * HTTP 상태코드 또는 응답 바디 기반으로 용량 초과/서비스 불가 오류인지 판별
+ * 해당되면 PER_PROVIDER_CAP_MS까지 기다리지 않고 즉시 다음 provider로 넘어감
+ * @param {number} status - HTTP 상태 코드
+ * @param {string} bodyText - 응답 바디 텍스트 (앞부분 200자)
+ * @returns {boolean} fail-fast 대상이면 true
+ */
+function isCapacityError(status, bodyText) {
+  // 명확한 HTTP 서비스/용량 오류
+  if (status === 429 || status === 502 || status === 503 || status === 504) return true;
+  // NVIDIA NIM의 ResourceExhausted 등 제공사별 용량 오류 메시지
+  if (bodyText && /ResourceExhausted|resource exhausted|rate limit|too many requests|overload|overloaded|capacity/i.test(bodyText)) return true;
+  return false;
+}
 
 // ============================================================================
 // 26 마케팅 원칙 (shortform-copywriting.md 기반)
@@ -547,7 +568,14 @@ export default async function handler(req, res) {
           // HTTP 에러인 경우 다음 provider 시도
           const bodyText = await response.text().catch(() => '');
           providerFailures.push({ provider: provider.name, cause: `error status=${response.status}`, detail: bodyText.substring(0, 200) });
-          console.warn(`[api/generate.js] Provider ${provider.name} error status=${response.status}, 다음 provider 시도`);
+          
+          // 용량 초과·서비스 불가 응답은 fail-fast: 남은 타임아웃 예산을 소진하지 않고 즉시 다음 provider로
+          if (isCapacityError(response.status, bodyText)) {
+            console.warn(`[api/generate.js] Provider ${provider.name} 용량/서비스 오류 (status=${response.status}), 5초 후 즉시 다음 provider로 전환 (fail-fast)`);
+            await new Promise(resolve => setTimeout(resolve, FAIL_FAST_DELAY_MS));
+          } else {
+            console.warn(`[api/generate.js] Provider ${provider.name} error status=${response.status}, 다음 provider 시도`);
+          }
         } catch (err) {
           // 타임아웃(abort)과 실제 네트워크 에러 구분
           if (err.name === 'TimeoutError' || err.name === 'AbortError' || (err.cause && err.cause.name === 'TimeoutError')) {
