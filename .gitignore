@@ -3,3 +3,7 @@ node_modules/
 .vercel/
 .vercel
 .env*
+# 중간 생성물
+**/_frames/
+# 시스템 파일
+.DS_Store
