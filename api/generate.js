@@ -226,7 +226,6 @@ ${inputContext}
 ---
 
 ## 출력 형식
-
 아래 JSON 구조로 출력하십시오:
 
 {
@@ -242,9 +241,9 @@ ${inputContext}
     "duration": "60",
     "scenes": [
       {
-        "time": "0-3초",
-        "type": "훅",
-        "dialogue": "대사",
+        "time": "0:00-0:09",
+        "type": "hook",
+        "dialogue": "대사 (한국어만 사용)",
         "direction": "연출지시"
       }
     ]
@@ -269,9 +268,11 @@ ${inputContext}
 - 모든 근거는 반드시 제공된 입력값에 기반할 것 (허위 근거 금지)
 - **rationale 배열은 반드시 1개 이상 포함할 것** (입력값이 적어도 target/concept/toneAndManner 기반으로 최소 3개 원칙 적용)
 - 입력값이 없는 필드는 해당 원칙을 rationale에서 제외할 것
-- 대사는 한국어로 작성
+- 대사는 한국어만 사용할 것 (일본어·영어·특수문자 혼입 금지)
 - 연출지시는 구체적이고 실행 가능한 수준으로
 - 각 씬은 시각(비주얼), 음성(VO), 캡션을 별도로 기술
+- **장면 type은 반드시 아래 7개 중 하나만 사용할 것 (철자·언어 엄수)**: hook, problem, solution, benefit, proof, cta, closing
+- **각 scene의 time은 "M:SS-M:SS" 형식(예: 0:00-0:09)으로만 표기할 것**
 - **각 rationale 항목에 반드시 citations 배열을 포함하고, reason에서 인용한 리뷰/신뢰요소 원문의 출처(sourceField: reviews 또는 trustFactors)를 명시할 것**
 - **citations 배열의 각 항목은 반드시 독립된 객체여야 하며, 한 객체에 하나의 인용만 포함할 것**
 - **sourceField는 오직 "reviews" 또는 "trustFactors"만 허용됨** (target, concept, price 등 다른 필드는 인용 금지)
@@ -351,6 +352,9 @@ ${inputs.excludedKeywords && inputs.excludedKeywords.length > 0
 - 출력은 반드시 하나의 \`\`\`json ... \`\`\` 코드 블록으로만 할 것
 - 코드 블록 외 다른 텍스트(설명, 서론, 결론 등)는 절대 출력하지 말 것
 - 위 JSON 형식 그대로 출력할 것 (필드 누락 금지)
+- 장면 type은 반드시 hook, problem, solution, benefit, proof, cta, closing 중 하나만 사용할 것
+- 각 scene의 time은 "M:SS-M:SS" 형식(예: 0:00-0:09)으로만 표기할 것
+- dialogue는 한국어만 사용할 것 (일본어·영어 혼입 금지)
 - 각 rationale 항목은 반드시 1개 이상의 citations를 포함할 것 (근거 데이터가 없으면 빈 배열 []만 포함 할 것)`;
 }
 
@@ -425,6 +429,55 @@ function parseApiResponse(data, inputs = {}) {
     usage: data.usage,
     error: '응답을 JSON으로 파싱할 수 없습니다.'
   };
+}
+
+// ============================================================================
+// generate 응답 → render-ready 호환 scene 정규화
+// ============================================================================
+
+/**
+ * generate API의 script.scenes를 render-ready 호환 장면 배열로 정규화.
+ * - scene type을 표준 영문 소문자(hook/problem/solution/benefit/proof/cta/closing)로 매핑
+ * - 표준 type이 없는 경우 가장 유사한 유형으로 폴백
+ * - 시간 표기/대사/연출 내용은 그대로 유지 (프롬프트 수준에서 표준화 가정)
+ *
+ * @param {Array} scenes - generate result.script.scenes
+ * @returns {Object[]} 정규화된 장면 배열 (template-plan generateScript와 호환 형식)
+ */
+function normalizeGenerateScenes(scenes) {
+  if (!Array.isArray(scenes)) return [];
+
+  const TYPE_MAP = {
+    // hook
+    '훅': 'hook', 'hook': 'hook',
+    // problem
+    '온램프': 'problem', '문제': 'problem', 'problem': 'problem',
+    // solution
+    '解决': 'solution', '해결': 'solution', '솔루션': 'solution', 'solution': 'solution',
+    // benefit / 소셜프루프 / 후기 / 증거 / 결과
+    '소셜프루프': 'benefit', '소셜': 'benefit', '-social proof': 'benefit',
+    'social proof': 'benefit', 'socialproof': 'benefit', 'social': 'benefit',
+    '후기': 'benefit', '증거': 'benefit', '결과': 'benefit', 'benefit': 'benefit',
+    // proof / 신뢰 / 인증 / 검증
+    '신뢰': 'proof', '인증': 'proof', '검증': 'proof',
+    'trust factor': 'proof', 'trustfactor': 'proof', 'trust': 'proof', 'proof': 'proof',
+    // cta
+    'cta': 'cta', 'CTA': 'cta', '행동유도': 'cta', '행동': 'cta',
+    // closing
+    '마무리': 'closing', '결론': 'closing', 'closing': 'closing',
+  };
+
+  return scenes.map((scene) => {
+    const rawType = (scene && scene.type && String(scene.type).trim()) || '';
+    const normalizedType = TYPE_MAP[rawType] || 'hook';
+    return {
+      time: (scene && scene.time) || '',
+      type: normalizedType,
+      dialogue: (scene && scene.dialogue) || '',
+      direction: (scene && scene.direction) || '',
+      visual: (scene && scene.visual) || '',
+    };
+  });
 }
 
 /**
