@@ -21,11 +21,21 @@
 // ============================================================================
 
 const ANALYSIS_PROVIDERS = [
+  // 1순위: NVIDIA NIM — 무료, 고품질. 단 ResourceExhausted 발생 시 fail-fast로 즉시 스킵
   { name: 'nvidia-nim', baseUrl: 'https://integrate.api.nvidia.com/v1', apiKeyEnv: 'NVIDIA_API_KEY', model: 'nvidia/nemotron-3-ultra-550b-a55b', free: true },
+  // 2순위: Groq — 빠른 무료 tier. llama-3.3-70b는 긴 프롬프트에서도 출력 완료율이 높음.
+  //   Groq 공식: https://console.groq.com  → API Keys 메뉴에서 발급.
+  { name: 'groq-llama33', baseUrl: 'https://api.groq.com/openai/v1', apiKeyEnv: 'GROQ_API_KEY', model: 'llama-3.3-70b-versatile', free: true },
+  // 3순위: Cerebras — 고속 추론 무료 tier. gemma-4-31b 사용.
+  //   Cerebras 공식: https://www.cerebras.ai/  → API Keys 메뉴에서 발급.
+  { name: 'cerebras-gemma4', baseUrl: 'https://api.cerebras.ai/v1', apiKeyEnv: 'CEREBRAS_API_KEY', model: 'gemma-4-31b', free: true },
+  // 4순위: Google Gemini — 무료 tier. 긴 시스템 프롬프트에서는 간결 버전 원칙을 사용.
   { name: 'gemini-flash', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/', apiKeyEnv: 'GEMINI_API_KEY', model: 'gemini-2.5-flash', free: true },
+  // 5~7순위: OpenCode Zen 무료 3종 (기존 유지)
   { name: 'zen-nemotron', baseUrl: 'https://opencode.ai/zen/v1', apiKeyEnv: 'OPENCODE_API_KEY', model: 'nemotron-3-ultra-free', free: true },
   { name: 'zen-deepseek-free', baseUrl: 'https://opencode.ai/zen/v1', apiKeyEnv: 'OPENCODE_API_KEY', model: 'deepseek-v4-flash-free', free: true },
   { name: 'zen-mimo', baseUrl: 'https://opencode.ai/zen/v1', apiKeyEnv: 'OPENCODE_API_KEY', model: 'mimo-v2.5-free', free: true },
+  // 마지막: 유료 DeepSeek — 앞쪽 모든 provider 실패 시에만 시도
   { name: 'deepseek-paid', baseUrl: 'https://api.deepseek.com/v1', apiKeyEnv: 'DEEPSEEK_API_TOKEN', model: 'deepseek-v4-flash', free: false }
 ];
 
@@ -140,21 +150,72 @@ const MARKETING_PRINCIPLES = `
 `.trim();
 
 // ============================================================================
+// Gemini 전용 간결한 마케팅 원칙 (긴 프롬프트에서 출력 완료율 개선)
+// ============================================================================
+// gemini-2.5-flash는 긴 입력 프롬프트에서 JSON 출력을 완료하지 못하는 경향이 있어
+// MARKETING_PRINCIPLES를 핵심 원칙명 + 한 줄 설명으로만 압축한 버전.
+// 원칙의 내용은 동일하나 해설 문구를 최소화하여 프롬프트 길이를 약 1/3로 줄임.
+
+const GEMINI_MARKETING_PRINCIPLES = `
+## 숏폼 광고 카피라이팅 26원칙 (Gemini 요약본)
+
+### 섹션 1: 훅(Hook) 작성 원칙
+- 1-1. 첫 3초 결정: 시각 액션 + VO 첫 말 + 캡션 텍스트 동시 조합, 무음 시청 전제 캡션 필수
+- 1-2. 호기심 갭: 핵심 명사를 숨겨 정보 공백으로 끝까지 보게 함, 광고 안에서 반드시 해소
+- 1-3. 대담한 주장: 구체적이고 반증 가능한 주장, 막연한 "최고/혁신적" 수사 금지
+- 1-4. 1인칭 고백: 실제 경험에서 나온 숫자·장면·감정 사용, 디테일 없으면 가짜로 읽힘
+- 1-5. 대조/전후: 첫 비트에 두 상태 보여줘 변화 인지, 건강·뷰티·금융은 플랫폼 정책 확인
+- 1-6. 공감/POV: 초구체적 상황 미러링, "POV: 3시인데 네 번째 커피"처럼 특정성이 메커니즘
+- 1-7. 증거 우선: 영수증·결과 화면을 맨 앞에, 스스로 자랑하는 결과가 가장 강한 사회적 증거
+- 1-8. 훅 다양성: 세그먼트×동기 매트릭스로 작성, 서로 다른 훅은 서로 다른 시청자 집단 도달
+- 1-9. 15~30초 구조: 훅(0~3초)→온램프(3~15초)→해결(15~25초)→CTA(25~30초)
+
+### 섹션 2: CTA 문구 패턴
+- 2-1. "행동 동사 + 받는 것 + Qualifier" 공식 사용
+- 2-2. 하나의 CTA, 단일 행동 — 선택지 늘면 Hick's Law에 따라 결정 시간·이탈 증가
+- 2-3. 긴급성·희소성은 진짜일 때만 사용, 가짜 긴급성은 신뢰 붕괴
+- 2-4. 대화형 CTA: 하드셀 대신 대화형, 예: "코드 FREEPACK 입력하면 첫 팩 무료"
+- 2-5. 사회적 증거 + CTA 결합 순서: [대담한 주장]→[증거]→[긴급성 있는 CTA]
+- 2-6. 위험 제거: 환불 보장·무료 체험·무약정으로 CTA 마찰 제거
+- 2-7. 영상은 단일 CTA 라인으로 마무리
+
+### 섹션 3: 심리적 트리거
+- 3-1. 고객보다 "더 잘" 문제 말하기: 정확히 문제 제시→"그거 내 상황" 인식→무행동 비용 암시
+- 3-2. 욕망 만들지 말고 기존 통증·공포·욕망에 연결, 새로운 욕망 만들기 실패
+- 3-3. 손실 회피 프레이밍: "얻는 것"보다 "놓치는 것"이 약 2배 강하게 작동(Prospect Theory)
+- 3-4. 통증을 정확한 숫자로 구체화: 구체적·정확한 디테일은 신뢰 만들고 모호한 주장은 죽임
+- 3-5. 질문형 문제 제시: 고객이 검색창에 입력하는 바로 그 질문이 가장 강한 훅
+- 3-6. "Stop [통증]. Start [즐거움]." 구조: 통증 제거와 욕구 충족을 한 문장에 대조 배치
+- 3-7. 사회적 증거로 보편성 증명: "많은 사람이 같은 문제 겪었다"는 실제 리뷰·수치만 사용, 발명 금지
+- 3-8. 현상 유지(무행동) 자체를 문제로 제시: 가장 큰 경쟁자는 현상 유지, 무행동 결과 구체화
+- 3-9. 동기는 리뷰·댓글 원문 언어 그대로 사용, 마케터 의역보다 항상 잘 통함, 발명된 주장·통계 금지
+- 3-10. 정체성 욕망 활용: "되고 싶은 나"를 문제 제시 단계부터 그려주면 동기 완성
+
+### 공통 적용 규칙
+- 모든 주장·수치·증언은 실제 데이터(리뷰, 판매 기록, 테스트 결과)에서 가져올 것, 발명 금지
+- 캡션은 무음 시청 전제, 화면 텍스트 한 번에 2줄 이하·줄당 3~5단어
+- 무성 오토플레이 고려, 브랜드/상품명은 화면(포스터·캡션)에도 넣을 것
+- 테스트 우선순위: 훅/앵글(영향 최대)→헤드라인→핵심 혜택→CTA→보조 증거
+`.trim();
+
+// ============================================================================
 // 시스템 프롬프트 구성
 // ============================================================================
 
 /**
  * 시스템 프롬프트 생성 — 26원칙 + 사용자 입력값 컨텍스트
  * @param {Object} inputs - 사용자 입력값
+ * @param {string} [provider] - provider 이름 (gemini-flash면 간결 버전 사용)
  * @returns {string} 시스템 프롬프트
  */
-function buildSystemPrompt(inputs) {
+function buildSystemPrompt(inputs, provider) {
   const inputContext = buildInputContext(inputs);
+  const principles = provider === 'gemini-flash' ? GEMINI_MARKETING_PRINCIPLES : MARKETING_PRINCIPLES;
 
   return `당신은 숏폼(15~60초) 광고 전문 카피라이터입니다.
 아래 26개 마케팅 원칙을 반드시 적용하여 전략 제안서를 작성합니다.
 
-${MARKETING_PRINCIPLES}
+${principles}
 
 ---
 
@@ -286,7 +347,11 @@ ${inputs.excludedKeywords && inputs.excludedKeywords.length > 0
 2. 60초 숏폼 광고 대본 (5~7개 씬, 각 씬에 시간/타입/대사/연출지시)
 3. 당위성 근거 (어떤 원칙을 왜 적용했는지, 입력값 기반으로만)
 
-반드시 JSON 형식으로 출력해주세요.`;
+## 출력 규칙 (반드시 준수)
+- 출력은 반드시 하나의 \`\`\`json ... \`\`\` 코드 블록으로만 할 것
+- 코드 블록 외 다른 텍스트(설명, 서론, 결론 등)는 절대 출력하지 말 것
+- 위 JSON 형식 그대로 출력할 것 (필드 누락 금지)
+- 각 rationale 항목은 반드시 1개 이상의 citations를 포함할 것 (근거 데이터가 없으면 빈 배열 []만 포함 할 것)`;
 }
 
 // ============================================================================
@@ -503,9 +568,6 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'inputs 필드가 필요합니다.' });
   }
   
-  // 시스템 프롬프트 구성 (26원칙 포함)
-  const systemPrompt = buildSystemPrompt(inputs);
-  
   // 사용자 프롬프트 생성
   const userPrompt = generateUserPrompt(inputs, mode);
   
@@ -527,6 +589,9 @@ export default async function handler(req, res) {
           continue; // 키 없으면 다음 provider로
         }
         
+        // 제공자별 시스템 프롬프트 구성 (Gemini는 간결한 원칙 버전 사용)
+        const systemPrompt = buildSystemPrompt(inputs, provider.name);
+        
         // 남은 예산 계산
         const remainingMs = GLOBAL_DEADLINE_MS - (Date.now() - startTime);
         if (remainingMs < MIN_ATTEMPT_MS) {
@@ -538,8 +603,10 @@ export default async function handler(req, res) {
         // 동적 타임아웃: 남은 예산과 provider 상한 중 작은 값
         const timeoutMs = Math.min(remainingMs, PER_PROVIDER_CAP_MS);
         
-        try {
-          const response = await fetch(`${provider.baseUrl}/chat/completions`, {
+          try {
+            // baseUrl trailing slash 제거 (이중 // 방지 — Gemini API 등에서 404 원인)
+            const baseUrl = provider.baseUrl.replace(/\/$/, '');
+            const response = await fetch(`${baseUrl}/chat/completions`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -547,7 +614,8 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
               model: provider.model,
-              max_tokens: 4096,
+              max_tokens: provider.name === 'gemini-flash' ? 8192 : 4096,
+              ...(provider.extraBody || {}),
               messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userPrompt }
@@ -601,6 +669,9 @@ export default async function handler(req, res) {
     
     // 응답 파싱
     const result = parseApiResponse(data, inputs);
+    // provider 정보 추가 (parseApiResponse가 새 객체를 반환하므로 다시 설정)
+    if (data._provider) result._provider = data._provider;
+    if (data._free !== undefined) result._free = data._free;
     
     // 성공 응답
     return res.status(200).json(result);
