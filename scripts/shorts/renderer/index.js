@@ -111,6 +111,22 @@ async function main() {
     }
   }
 
+  // image map: sceneIndex → localPath (인물/배경 이미지)
+  // setContent 페이지에서 file://는 Chromium 보안 정책으로 로드 실패하므로 base64 data URI로 인라인
+  const sceneImageMap = {};
+  for (const im of images) {
+    const idx = im.sceneIndex;
+    if (im.localPath && existsSync(im.localPath)) {
+      const p = im.localPath;
+      if (p.startsWith('data:') || p.startsWith('http')) {
+        sceneImageMap[idx] = p;
+      } else {
+        const buf = readFileSync(p);
+        sceneImageMap[idx] = `data:image/jpeg;base64,${buf.toString('base64')}`;
+      }
+    }
+  }
+
   // 각 scene별 오디오 duration과 프레임 수
   const scenePlans = [];
   let totalFrames = 0;
@@ -133,6 +149,7 @@ async function main() {
       scene,
       sceneIdx,
       audioPath,
+      imagePath: sceneImageMap[sceneIdx] || null,  // 인물/배경 이미지 경로
       audioDur: effectiveDur,
       frameCount,
       sceneDur,
@@ -175,7 +192,7 @@ async function main() {
       const frameNum = globalFrameIndex + f;
       const html = isClosing
         ? closingFrame(brand, product, palette, s, scenes.length)
-        : sceneHtml(scene, plan.audioPath ? null : null, palette, s, scenes.length, true, f, frameCount);
+        : sceneHtml(scene, plan.imagePath, palette, s, scenes.length, true, f, frameCount);
 
       const outFile = join(framesDir, `frame-${String(frameNum).padStart(5, '0')}.png`);
 

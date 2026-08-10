@@ -19,6 +19,7 @@ import { slidePrinciples }  from '../templates/template-principles.js';
 import { slideCta }         from '../templates/template-cta.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const BASE_IMAGES_DIR = join(__dirname, '..', '..', '..', 'content', 'campaigns');
 
 function inferCategory(brand, product, strategy) {
   const text = [brand, product, strategy?.overview, strategy?.targetAudience].join(' ').toLowerCase();
@@ -66,17 +67,33 @@ async function main() {
   if (proposal.images?.length > 0) {
     productImage = proposal.images[0].localPath || proposal.images[0].url || null;
   }
+  // 폴백: 캠페인 ID 기반 product_bg.jpg 자동 감지 (기존 동작 유지, 추가)
+  const productBgFallback = join(BASE_IMAGES_DIR, campaignId, 'shorts', 'images', 'product_bg.jpg');
+  if (!productImage && existsSync(productBgFallback)) {
+    productImage = productBgFallback;
+    console.log(`🖼️  폴백 제품 이미지 감지: ${productBgFallback}`);
+  }
+
+  // 로컬 파일 경로 → base64 data URI 인라인 변환
+  // (setContent 페이지에서 file://는 Chromium 보안 정책으로 로드 실패가 확인됨)
+  if (productImage && !productImage.startsWith('data:') && !productImage.startsWith('http')) {
+    if (existsSync(productImage.replace(/^file:\/\//, ''))) {
+      const localPath = productImage.replace(/^file:\/\//, '');
+      const buf = readFileSync(localPath);
+      productImage = `data:image/jpeg;base64,${buf.toString('base64')}`;
+    }
+  }
 
   // 슬라이드 정의: [템플릿함수, render 데이터] 배열
   const baseData = { brand, product, productImage, ...proposal };
   const slideFns = [
     [slideCover, { ...baseData, subtitle: '쇼츠 광고 전략 분석 & 대본',
       tagline: proposal.tagline || null, price: proposal.price || null, rating: proposal.rating || null }],
-    ...(strategy.overview ? [[slideStrategyOverview, { brand, product, strategy, script, rationale }]] : []),
-    ...(strategy.targetAudience ? [[slideTarget, { brand, product, strategy, script, rationale, category }]] : []),
+    ...(strategy.overview ? [[slideStrategyOverview, { brand, product, strategy, script, rationale, productImage }]] : []),
+    ...(strategy.targetAudience ? [[slideTarget, { brand, product, strategy, script, rationale, category, productImage }]] : []),
     ...(strategy.keyMessage ? [[slideKeyMessage, { brand, product, strategy, script, rationale, productImage }]] : []),
-    ...((strategy.differentiation || strategy.competitorAnalysis) ? [[slideDifferentiation, { brand, product, strategy, script, rationale }]] : []),
-    [slidePrinciples, { brand, product, strategy, script, rationale }],
+    ...((strategy.differentiation || strategy.competitorAnalysis) ? [[slideDifferentiation, { brand, product, strategy, script, rationale, productImage }]] : []),
+    [slidePrinciples, { brand, product, strategy, script, rationale, productImage }],
     [slideCta, { ...baseData, price: proposal.price || null, sale: proposal.sale || false,
       ctaText: proposal.ctaText || `지금 바로 ${brand} ${product} 자세히 보기`,
       ctaSub: proposal.ctaSub || '전문 광고 전략을 통한 구매 전환 극대화' }],
