@@ -10,7 +10,8 @@
     "test:review": "echo '1. vercel dev 2. POST /api/review 3. GET /api/review?id=xxx 4. PATCH /api/review'"
   },
   "dependencies": {
-    "@vercel/kv": "^3.0.0"
+    "@vercel/kv": "^3.0.0",
+    "canvas": "^3.2.3"
   },
   "devDependencies": {
     "playwright": "^1.61.0",
