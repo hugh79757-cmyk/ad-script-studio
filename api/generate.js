@@ -1,6 +1,6 @@
 /**
  * @file api/generate.js
- * @description Vercel serverless function — 무료 우선 5단계 폴백으로 LLM 호출
+ * @description Vercel serverless function — 무료 우선 6단계 폴백으로 LLM 호출
  * 
  * POST /api/generate
  * Body: { inputs: { brandName, productName, concept, target, toneAndManner,
@@ -9,10 +9,11 @@
  * 
  * Provider Chain (무료 우선):
  * 1. NVIDIA NIM: nvidia/nemotron-3-ultra-550b-a55b (NVIDIA_API_KEY)
- * 2. OpenCode Zen: nemotron-3-ultra-free (OPENCODE_API_KEY)
- * 3. OpenCode Zen: deepseek-v4-flash-free (OPENCODE_API_KEY)
- * 4. OpenCode Zen: mimo-v2.5-free (OPENCODE_API_KEY)
- * 5. Paid DeepSeek: deepseek-v4-flash (DEEPSEEK_API_TOKEN)
+ * 2. Google Gemini: gemini-2.5-flash (GEMINI_API_KEY) — 안정적 무료 tier
+ * 3. OpenCode Zen: nemotron-3-ultra-free (OPENCODE_API_KEY)
+ * 4. OpenCode Zen: deepseek-v4-flash-free (OPENCODE_API_KEY)
+ * 5. OpenCode Zen: mimo-v2.5-free (OPENCODE_API_KEY)
+ * 6. Paid DeepSeek: deepseek-v4-flash (DEEPSEEK_API_TOKEN)
  */
 
 // ============================================================================
@@ -21,6 +22,7 @@
 
 const ANALYSIS_PROVIDERS = [
   { name: 'nvidia-nim', baseUrl: 'https://integrate.api.nvidia.com/v1', apiKeyEnv: 'NVIDIA_API_KEY', model: 'nvidia/nemotron-3-ultra-550b-a55b', free: true },
+  { name: 'gemini-flash', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/', apiKeyEnv: 'GEMINI_API_KEY', model: 'gemini-2.5-flash', free: true },
   { name: 'zen-nemotron', baseUrl: 'https://opencode.ai/zen/v1', apiKeyEnv: 'OPENCODE_API_KEY', model: 'nemotron-3-ultra-free', free: true },
   { name: 'zen-deepseek-free', baseUrl: 'https://opencode.ai/zen/v1', apiKeyEnv: 'OPENCODE_API_KEY', model: 'deepseek-v4-flash-free', free: true },
   { name: 'zen-mimo', baseUrl: 'https://opencode.ai/zen/v1', apiKeyEnv: 'OPENCODE_API_KEY', model: 'mimo-v2.5-free', free: true },
