@@ -29,7 +29,7 @@ body{background:${palette.gradient};display:flex;flex-direction:column;min-heigh
 .tile .num{font-size:18px;font-weight:800;color:${palette.primary}}
 .tile .lbl{font-size:13px;color:${palette.textLight};font-weight:500;letter-spacing:0.04em}
 .cards{flex:1;display:flex;gap:20px;padding:36px 80px}
-.card{flex:1;background:${palette.white};border:1px solid ${palette.textLight}25;border-radius:16px;padding:28px 24px;display:flex;flex-direction:column;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,0.04)}
+.card{flex:1;background:${palette.white};border:1px solid ${palette.textLight}25;border-radius:16px;padding:28px 24px;display:flex;flex-direction:column;justify-content:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,0.04)}
 .card-dot{width:10px;height:10px;border-radius:50%;margin-bottom:4px}
 .card-label{font-size:14px;font-weight:700;letter-spacing:0.05em}
 .card-text{font-size:21px;font-weight:500;color:${palette.textDark};line-height:1.5}

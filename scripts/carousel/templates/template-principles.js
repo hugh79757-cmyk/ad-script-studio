@@ -35,7 +35,7 @@ export function slidePrinciples(data, palette, current, total) {
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:1080px;height:1350px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',sans-serif}
-body{background:${palette.light};display:flex;flex-direction:column;min-height:100%}
+body{background:${palette.gradient};display:flex;flex-direction:column;min-height:100%}
 .header{padding:56px 80px 0;display:flex;align-items:flex-start;justify-content:space-between}
 h2{font-size:42px;font-weight:800;color:${palette.textDark};letter-spacing:-0.02em}
 .al{width:56px;height:4px;background:${palette.primary};margin-top:14px;border-radius:2px}

@@ -74,16 +74,16 @@ html,body{width:1080px;height:1920px;overflow:hidden;font-family:-apple-system,B
 .scene.kenburns .scene-inner{width:1080px;height:1920px;transform:scale(${kbZoom});transform-origin:center center}
 .scene-inner{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end}
 
-/* 타입 배지 */
-.type-badge{position:absolute;top:80px;left:80px;background:${ts.badgeBg};color:${ts.badgeText};border-radius:100px;padding:8px 18px;font-size:13px;font-weight:700;letter-spacing:0.1em;opacity:0.95;display:flex;align-items:center;gap:8px}
+/* 타입 배지 — safe zone 상단 경계(y=250)에 정렬 */
+.type-badge{position:absolute;top:250px;left:80px;background:${ts.badgeBg};color:${ts.badgeText};border-radius:100px;padding:8px 18px;font-size:13px;font-weight:700;letter-spacing:0.1em;opacity:0.95;display:flex;align-items:center;gap:8px}
 .type-badge svg{width:12px;height:12px}
-.time-badge{position:absolute;top:80px;right:80px;background:rgba(0,0,0,0.5);color:rgba(255,255,255,0.7);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:500;font-variant-numeric:tabular-nums}
+.time-badge{position:absolute;top:250px;right:80px;background:rgba(0,0,0,0.5);color:rgba(255,255,255,0.7);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:500;font-variant-numeric:tabular-nums}
 
 /* 오버레이 */
 .overlay{position:absolute;inset:0;background:${ts.bgOverlay}}
 
-/* 자막 */
-.caption-area{position:absolute;left:80px;right:80px;bottom:200px;display:flex;flex-direction:column;gap:16px;animation:fadeInUp 0.5s ease-out ${0.1 * sceneIdx}s both}
+/* 자막 — safe zone 하단 경계(y=1320)에 자막 하단 정렬 (bottom = 1920-1320 = 600px) */
+.caption-area{position:absolute;left:80px;right:80px;bottom:600px;display:flex;flex-direction:column;gap:16px;animation:fadeInUp 0.5s ease-out ${0.1 * sceneIdx}s both}
 
 /* 자막 배경 (배경색과 독립적인 가독성 보장) */
 .caption-box{background:rgba(0,0,0,0.72);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:20px 28px;backdrop-filter:blur(4px);box-shadow:0 8px 32px rgba(0,0,0,0.3);animation:fadeInUp 0.5s ease-out ${0.15 * sceneIdx}s both}
@@ -94,14 +94,14 @@ html,body{width:1080px;height:1920px;overflow:hidden;font-family:-apple-system,B
 /* 강조 하이라이트 (카라오케 스타일) */
 .highlight{background:${palette.primary};color:#fff;border-radius:6px;padding:2px 8px;font-weight:800}
 
-/* 하단 페이지 인디케이터 */
-.scene-indicator{position:absolute;bottom:80px;left:80px;display:flex;gap:8px;align-items:center}
+/* 하단 페이지 인디케이터 — 자막 상단(y≈1170) 위에 배치 (bottom = 1920-1150 = 770px) */
+.scene-indicator{position:absolute;bottom:770px;left:80px;display:flex;gap:8px;align-items:center}
 .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.25)}
 .dot.active{background:${palette.primary};box-shadow:0 0 8px ${palette.primary}}
 .dot.done{background:${palette.primary}60}
 
-/* 장면 번호 */
-.scene-num{position:absolute;bottom:80px;right:80px;font-size:13px;color:rgba(255,255,255,0.4);font-weight:500;letter-spacing:0.05em}
+/* 장면 번호 — 인디케이터 우측, 같은 높이 */
+.scene-num{position:absolute;bottom:770px;right:80px;font-size:13px;color:rgba(255,255,255,0.4);font-weight:500;letter-spacing:0.05em}
 
 /* 브랜드 프로그레스 바 */
 .progress-bar{position:absolute;top:0;left:0;height:3px;background:${palette.primary};width:0%;transition:width 0.3s}

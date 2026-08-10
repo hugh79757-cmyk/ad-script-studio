@@ -69,14 +69,14 @@ export function slideTarget(data, palette, current, total) {
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:1080px;height:1350px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Pretendard',sans-serif;-webkit-font-smoothing:antialiased}
-body{background:${palette.light};display:flex;flex-direction:column;min-height:100%}
+body{background:${palette.gradient};display:flex;flex-direction:column;min-height:100%}
 .header{padding:56px 80px 0;display:flex;align-items:flex-start;justify-content:space-between}
 .title-block h2{font-size:42px;font-weight:800;color:${palette.textDark};letter-spacing:-0.02em}
 .accent-line{width:56px;height:4px;border-radius:2px;background:${palette.primary};margin-top:14px}
 .insight-badge{background:${palette.primary}12;border:1px solid ${palette.primary}30;border-radius:100px;padding:8px 18px;display:flex;align-items:center;gap:8px;font-size:14px;color:${palette.primary};font-weight:600}
 .insight-badge svg{width:15px;height:15px}
 .cards{flex:1;display:flex;gap:20px;padding:36px 80px}
-.persona{flex:1;background:${palette.white};border:1px solid ${palette.textLight}25;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:16px}
+.persona{flex:1;background:${palette.white};border:1px solid ${palette.textLight}25;border-radius:16px;padding:24px;display:flex;flex-direction:column;justify-content:center;gap:16px}
 .persona-top{display:flex;align-items:center;gap:14px}
 .avatar{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center}
 .persona-meta .persona-label{font-size:17px;font-weight:700;color:${palette.textDark}}
