@@ -355,7 +355,12 @@ ${inputs.excludedKeywords && inputs.excludedKeywords.length > 0
 - 장면 type은 반드시 hook, problem, solution, benefit, proof, cta, closing 중 하나만 사용할 것
 - 각 scene의 time은 "M:SS-M:SS" 형식(예: 0:00-0:09)으로만 표기할 것
 - dialogue는 한국어만 사용할 것 (일본어·영어 혼입 금지)
-- 각 rationale 항목은 반드시 1개 이상의 citations를 포함할 것 (근거 데이터가 없으면 빈 배열 []만 포함 할 것)`;
+- dialogue에 "당신의", "여러분" 같은 일반적 2인칭 대명사 대신 타겟의 구체적 상황·행동·감정을 묘사할 것
+  (예: "당신의 피부를 바꿔드려요" → "아침마다 당김이 심했던 피부가 달라져요")
+- 각 rationale 항목은 반드시 1개 이상의 citations를 포함할 것 (근거 데이터가 없으면 빈 배열 []만 포함 할 것)
+- citations의 sourceField는 오직 "reviews" 또는 "trustFactors"만 사용할 것 (target, concept, price 등은 인용 금지)
+- citations의 text는 inputs의 reviewExcerpts 또는 trustFactors 원문에서 그대로 복사할 것 (의역·생성·요약 금지)
+- inputs에 해당 근거 데이터가 없으면 citations는 빈 배열 []로 둘 것 (다른 필드 인용으로 대체 금지)`;
 }
 
 // ============================================================================
