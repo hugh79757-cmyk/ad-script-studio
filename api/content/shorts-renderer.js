@@ -629,10 +629,14 @@ export async function fetchPollinationsImage(prompt, campaignId, sceneIndex, opt
 
     writeFileSync(outputPath, buffer);
 
+    // 키가 포함된 URL을 sourceUrl로 노출하지 않도록 쿼리에서 key 제거 (3-2)
+    const publicUrl = new URL(url);
+    publicUrl.searchParams.delete('key');
+
     return {
       success: true,
       imagePath: outputPath,
-      sourceUrl: url,
+      sourceUrl: publicUrl.toString(),
       source: 'pollinations',
       prompt,
       sceneIndex,
