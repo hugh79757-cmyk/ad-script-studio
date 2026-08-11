@@ -137,14 +137,24 @@ function saveBenchmarkResults(results) {
 
 // 탭 전환 시 상태 복원
 function restoreTabState() {
-  const savedProposal = sessionStorage.getItem('proposalResults');
-  const savedVideo = sessionStorage.getItem('videoResults');
-  
-  if (savedProposal) {
-    tabState.proposalResults = JSON.parse(savedProposal);
+  // 손상된 sessionStorage JSON으로 초기화가 중단되지 않도록 예외 격리 (손상 키는 제거)
+  try {
+    const savedProposal = sessionStorage.getItem('proposalResults');
+    if (savedProposal) {
+      tabState.proposalResults = JSON.parse(savedProposal);
+    }
+  } catch (e) {
+    console.warn('[state-manager.js] proposalResults 복원 실패, 키 제거:', e);
+    sessionStorage.removeItem('proposalResults');
   }
-  if (savedVideo) {
-    tabState.videoResults = JSON.parse(savedVideo);
+  try {
+    const savedVideo = sessionStorage.getItem('videoResults');
+    if (savedVideo) {
+      tabState.videoResults = JSON.parse(savedVideo);
+    }
+  } catch (e) {
+    console.warn('[state-manager.js] videoResults 복원 실패, 키 제거:', e);
+    sessionStorage.removeItem('videoResults');
   }
 }
 
