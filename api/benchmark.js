@@ -255,9 +255,10 @@ async function withRetry(fn, maxRetries = 2) {
     } catch (error) {
       lastError = error;
 
-      // rate limit: retry-after 대기 후 재시도
+      // rate limit: retry-after 대기 후 재시도 (헤더는 초 단위 → ms 변환, 2-4)
       if (error.status === 429) {
-        const retryAfterMs = Number(error.headers?.['retry-after'] || Math.pow(2, attempt) * 1000);
+        const retryAfterSec = Number(error.headers?.['retry-after']);
+        const retryAfterMs = Number.isFinite(retryAfterSec) ? retryAfterSec * 1000 : Math.pow(2, attempt) * 1000;
         await new Promise(resolve => setTimeout(resolve, retryAfterMs));
         continue;
       }
@@ -522,6 +523,47 @@ async function transcribeReel(reel) {
   }
 }
 
+// 허용 호스트 목록 (SSRF 방지 — 3-1)
+// Apify 크롤러가 뽑은 인스타그램 CDN 도메인만 허용
+const ALLOWED_MEDIA_HOSTS = [
+  'cdninstagram.com',
+  'fbcdn.net',
+  'fbsbx.com',
+  'instagram.f',
+  'scontent'
+];
+
+// private IP 범위 검사 (SSRF 방지 — 3-1)
+function isPrivateIp(hostname) {
+  // IPv4 리터럴인 경우에만 검사
+  const ipv4Match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (!ipv4Match) return false; // 도메인은 DNS 해석을 신뢰하지 않고 호스트 화이트리스트로 검사
+  const parts = ipv4Match.slice(1).map(Number);
+  // 10.x, 172.16-31.x, 192.168.x, 127.x, 169.254.x
+  return parts[0] === 10
+    || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31)
+    || (parts[0] === 192 && parts[1] === 168)
+    || parts[0] === 127
+    || (parts[0] === 169 && parts[1] === 254)
+    || parts[0] === 0;
+}
+
+// 미디어 URL 안전성 검증 (SSRF 방지 — 3-1)
+function isSafeMediaUrl(url) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
+    if (isPrivateIp(parsed.hostname)) return false;
+    // 호스트 화이트리스트: 도메인 또는 서브도메인 매칭
+    const host = parsed.hostname.toLowerCase();
+    return ALLOWED_MEDIA_HOSTS.some(allowed =>
+      host === allowed || host.endsWith(`.${allowed}`)
+    );
+  } catch {
+    return false;
+  }
+}
+
 /**
  * URL에서 오디오/비디오 바이너리 fetch
  * @param {string|null} url - 다운로드 대상 URL (Apify dataset의 audioUrl/videoUrl 필드 한정 — SSRF 방지)
@@ -529,6 +571,11 @@ async function transcribeReel(reel) {
  */
 async function fetchAudio(url) {
   if (!url) throw new Error('오디오 URL 없음');
+  // SSRF 방지: 허용 호스트 화이트리스트 + private IP 차단 (3-1)
+  if (!isSafeMediaUrl(url)) {
+    console.warn(`[api/benchmark.js] 차단된 미디어 URL 호스트: ${url.substring(0, 100)}`);
+    throw new Error('허용되지 않은 미디어 URL 호스트');
+  }
   const response = await fetch(url);
   if (!response.ok) throw new Error(`오디오 다운로드 실패 (HTTP ${response.status})`);
   return Buffer.from(await response.arrayBuffer());
@@ -775,7 +822,9 @@ async function handleGet(req, res) {
     console.error('[api/benchmark.js] GET 처리 오류:', err.message);
     job.stage = 'failed';
     job.status = 'failed';
-    job.error = err.message || '처리 중 오류가 발생했습니다.';
+    // 내부 에러 메시지(provider 네트워크/Apify 원문)는 로그로만, 클라이언트에는 고정 메시지 (1-5)
+    job.error = '처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    job._detail = err.message || String(err);
   }
 
   job.updatedAt = new Date().toISOString();
@@ -790,14 +839,16 @@ async function handleGet(req, res) {
  * @param {Object} job - job 객체
  */
 function respondJob(res, job) {
+  // _detail(내부 에러 상세)은 응답에서 제외 — 클라이언트 노출 방지 (1-5)
+  const { _detail, ...publicJob } = job;
   return res.status(200).json({
-    jobId: job.jobId,
-    status: job.status,
-    stage: job.stage,
-    error: job.error,
-    reels: job.reels || [],
-    transcripts: job.transcripts || [],
-    result: job.result
+    jobId: publicJob.jobId,
+    status: publicJob.status,
+    stage: publicJob.stage,
+    error: publicJob.error,
+    reels: publicJob.reels || [],
+    transcripts: publicJob.transcripts || [],
+    result: publicJob.result
   });
 }
 
