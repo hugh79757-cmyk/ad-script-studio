@@ -2,6 +2,43 @@
 // escapeHtml()는 app.js에서 제공됨
 
 /**
+ * "2번으로 보내기" 후 자동 실행 — 상태의 videoScript를 textarea에 반영하고 프롬프트 생성
+ * (state-manager.js transferToVideoGenerator()가 호출, 기존에 미정의되어 조용히 무시됨)
+ */
+function generateVideoPrompts() {
+  const textarea = document.getElementById('videoScriptInput');
+  if (!textarea) return;
+  
+  // state-manager가 updateState('videoScript', ...)로 넣은 값 우선, 없으면 tabState에서 복원
+  const scriptText = (typeof appState !== 'undefined' && appState.videoScript) ||
+    (typeof tabState !== 'undefined' && tabState.videoResults && tabState.videoResults.script) || '';
+  
+  if (!scriptText) {
+    // 탭이 아직 초기화되지 않았으면 video-ui가 렌더링한 후 다시 시도
+    const container = document.getElementById('videoGeneratorUI');
+    if (container && !container.querySelector('#videoScriptInput')) {
+      initVideoUI();
+      const retryEl = document.getElementById('videoScriptInput');
+      if (retryEl && scriptText) retryEl.value = scriptText;
+    }
+    return;
+  }
+  
+  // 객체(구조화 scenes)면 텍스트로 변환, 문자열이면 그대로
+  const normalized = typeof scriptText === 'string'
+    ? scriptText
+    : (Array.isArray(scriptText.scenes)
+        ? scriptText.scenes.map(s => `${s.time || ''} ${s.dialogue || ''}`).join('\n')
+        : JSON.stringify(scriptText, null, 2));
+  
+  textarea.value = normalized;
+  
+  const detailLevel = document.querySelector('.detail-btn.active')?.dataset.detail || '보통';
+  const prompts = generateAllPrompts(normalized, detailLevel);
+  renderVideoResults(prompts);
+}
+
+/**
  * 영상 소스 생성기 UI 초기화
  */
 function initVideoUI() {

@@ -55,7 +55,7 @@ function renderTags(container, field) {
   appState[field].forEach((item, index) => {
     const tag = document.createElement('div');
     tag.className = 'tag-item';
-    tag.innerHTML = `${item}<span class="remove-tag" data-index="${index}">×</span>`;
+    tag.innerHTML = `${escapeHtml(item)}<span class="remove-tag" data-index="${index}">×</span>`;
     container.insertBefore(tag, input);
   });
   container.querySelectorAll('.remove-tag').forEach(btn => {
@@ -440,33 +440,39 @@ function renderAutoResult(result) {
   // 전략 개요 렌더링
   const strategyEl = document.getElementById('strategy');
   if (result.strategy) {
-    strategyEl.innerHTML = `<div class="auto-result">${result.strategy}</div>`;
+    strategyEl.innerHTML = `<div class="auto-result">${escapeHtml(typeof result.strategy === 'string' ? result.strategy : JSON.stringify(result.strategy, null, 2))}</div>`;
   }
   
   // 대본 렌더링
   const scriptEl = document.getElementById('script');
   if (result.script) {
-    scriptEl.innerHTML = `
-      <div class="result-header">
-        <h3>생성된 대본</h3>
-        <div class="action-buttons">
-          <button class="copyBtn" type="button">복사</button>
+    // 객체(구조화 scenes)면 기존 대본 렌더러 재사용, 문자열이면 이스케이프 후 표시
+    if (typeof result.script === 'object' && Array.isArray(result.script.scenes)) {
+      renderScriptResult(result.script.scenes);
+    } else {
+      const scriptText = typeof result.script === 'string' ? result.script : JSON.stringify(result.script, null, 2);
+      scriptEl.innerHTML = `
+        <div class="result-header">
+          <h3>생성된 대본</h3>
+          <div class="action-buttons">
+            <button class="copyBtn" type="button">복사</button>
+          </div>
         </div>
-      </div>
-      <div class="auto-script-content">${result.script}</div>
-    `;
-    // 복사 버튼 바인딩
-    const copyBtn = scriptEl.querySelector('.copyBtn');
-    if (copyBtn) {
-      copyBtn.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(result.script);
-          copyBtn.textContent = '복사됨!';
-          setTimeout(() => { copyBtn.textContent = '복사'; }, 2000);
-        } catch (err) {
-          console.error('클립보드 복사 실패', err);
-        }
-      });
+        <div class="auto-script-content">${escapeHtml(scriptText)}</div>
+      `;
+      // 복사 버튼 바인딩
+      const copyBtn = scriptEl.querySelector('.copyBtn');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(scriptText);
+            copyBtn.textContent = '복사됨!';
+            setTimeout(() => { copyBtn.textContent = '복사'; }, 2000);
+          } catch (err) {
+            console.error('클립보드 복사 실패', err);
+          }
+        });
+      }
     }
   }
   

@@ -570,7 +570,9 @@ async function withRetry(fn, maxRetries = 2) {
       
       // rate limit 에러인 경우 대기
       if (error.status === 429) {
-        const retryAfter = error.headers?.['retry-after'] || Math.pow(2, attempt) * 1000;
+        // retry-after 헤더는 초 단위 → ms로 변환, 비표준/부재 시 지수 백오프
+        const retryAfterSec = Number(error.headers?.['retry-after']);
+        const retryAfter = Number.isFinite(retryAfterSec) ? retryAfterSec * 1000 : Math.pow(2, attempt) * 1000;
         await new Promise(resolve => setTimeout(resolve, retryAfter));
         continue;
       }
@@ -588,6 +590,53 @@ async function withRetry(fn, maxRetries = 2) {
 // ============================================================================
 // 메인 핸들러
 // ============================================================================
+
+// ============================================================================
+// 개별 provider 호출 (2-3: withRetry를 개별 provider 단위로 적용)
+// ============================================================================
+
+/**
+ * 단일 provider LLM 호출 — fetch + 동적 타임아웃
+ * HTTP 오류는 status/bodyText/isCapacity를 붙인 Error로 throw (withRetry가 429 재시도 처리)
+ * @param {Object} provider - ANALYSIS_PROVIDERS 항목
+ * @param {string} providerKey - API 키
+ * @param {string} systemPrompt - 시스템 프롬프트
+ * @param {string} userPrompt - 사용자 프롬프트
+ * @param {number} timeoutMs - 타임아웃 (ms)
+ * @returns {Promise<Object>} OpenAI 호환 응답
+ */
+async function callProvider(provider, providerKey, systemPrompt, userPrompt, timeoutMs) {
+  // baseUrl trailing slash 제거 (이중 // 방지 — Gemini API 등에서 404 원인)
+  const baseUrl = provider.baseUrl.replace(/\/$/, '');
+  const response = await fetch(`${baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${providerKey}`
+    },
+    body: JSON.stringify({
+      model: provider.model,
+      max_tokens: provider.name === 'gemini-flash' ? 8192 : 4096,
+      ...(provider.extraBody || {}),
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ]
+    }),
+    signal: AbortSignal.timeout(timeoutMs)
+  });
+  
+  if (response.ok) {
+    return await response.json();
+  }
+  
+  const bodyText = await response.text().catch(() => '');
+  const err = new Error(`HTTP ${response.status}: ${bodyText.substring(0, 200)}`);
+  err.status = response.status;
+  err.bodyText = bodyText;
+  err.isCapacity = isCapacityError(response.status, bodyText);
+  throw err;
+}
 
 /**
  * Vercel Serverless Function 핸들러
@@ -628,6 +677,19 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'inputs 필드가 필요합니다.' });
   }
   
+  // 3-3: 입력 검증 — 배열 필드 타입 확인 + 문자열 길이 상한
+  const MAX_FIELD_LEN = 2000;
+  for (const field of ['reviewExcerpts', 'trustFactors', 'excludedKeywords']) {
+    if (inputs[field] !== undefined && inputs[field] !== null && !Array.isArray(inputs[field])) {
+      return res.status(400).json({ error: `${field} 필드는 배열이어야 합니다.` });
+    }
+  }
+  for (const field of ['brandName', 'productName', 'concept', 'target', 'toneAndManner', 'competitorInfo', 'priceRange']) {
+    if (typeof inputs[field] === 'string' && inputs[field].length > MAX_FIELD_LEN) {
+      return res.status(400).json({ error: `${field} 필드가 너무 깁니다. (최대 ${MAX_FIELD_LEN}자)` });
+    }
+  }
+  
   // 사용자 프롬프트 생성
   const userPrompt = generateUserPrompt(inputs, mode);
   
@@ -635,92 +697,68 @@ export default async function handler(req, res) {
   // 데드라인 로직 (2026-08-01): 전역 데드라인 대비 남은 예산을 계산해
   // 각 provider fetch에 동적 타임아웃을 적용. 예산이 최소 임계값 미만이면
   // fetch를 시도하지 않고 다음 provider로 넘어간다.
+  // 2-3: withRetry는 개별 provider 호출 단위로 적용 (체인 전체 재순회 방지)
   let data;
   try {
     const startTime = Date.now();
-    // 각 provider별 실패 원인 수집 (최종 에러 응답에 포함)
+    // 각 provider별 실패 원인 수집 (서버 로그용)
     const providerFailures = [];
     
-    data = await withRetry(async () => {
-      for (const provider of ANALYSIS_PROVIDERS) {
-        const providerKey = process.env[provider.apiKeyEnv];
-        if (!providerKey) {
-          providerFailures.push({ provider: provider.name, cause: 'skipped-no-api-key' });
-          continue; // 키 없으면 다음 provider로
-        }
-        
-        // 제공자별 시스템 프롬프트 구성 (Gemini는 간결한 원칙 버전 사용)
-        const systemPrompt = buildSystemPrompt(inputs, provider.name);
-        
-        // 남은 예산 계산
-        const remainingMs = GLOBAL_DEADLINE_MS - (Date.now() - startTime);
-        if (remainingMs < MIN_ATTEMPT_MS) {
-          providerFailures.push({ provider: provider.name, cause: `skipped-deadline (remainingMs=${remainingMs})` });
-          console.warn(`[api/generate.js] Provider ${provider.name} 스킵: 전역 데드라인 소진 (남은 예산 ${remainingMs}ms < ${MIN_ATTEMPT_MS}ms)`);
-          continue; // fetch 자체를 시도하지 않음
-        }
-        
-        // 동적 타임아웃: 남은 예산과 provider 상한 중 작은 값
-        const timeoutMs = Math.min(remainingMs, PER_PROVIDER_CAP_MS);
-        
-          try {
-            // baseUrl trailing slash 제거 (이중 // 방지 — Gemini API 등에서 404 원인)
-            const baseUrl = provider.baseUrl.replace(/\/$/, '');
-            const response = await fetch(`${baseUrl}/chat/completions`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${providerKey}`
-            },
-            body: JSON.stringify({
-              model: provider.model,
-              max_tokens: provider.name === 'gemini-flash' ? 8192 : 4096,
-              ...(provider.extraBody || {}),
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt }
-              ]
-            }),
-            // 타임아웃: 남은 예산과 provider 상한 중 작은 값
-            signal: AbortSignal.timeout(timeoutMs)
-          });
-          
-          if (response.ok) {
-            const result = await response.json();
-            // 성공 시 provider 정보 추가
-            result._provider = provider.name;
-            result._free = provider.free;
-            return result;
-          }
-          
-          // HTTP 에러인 경우 다음 provider 시도
-          const bodyText = await response.text().catch(() => '');
-          providerFailures.push({ provider: provider.name, cause: `error status=${response.status}`, detail: bodyText.substring(0, 200) });
-          
-          // 용량 초과·서비스 불가 응답은 fail-fast: 남은 타임아웃 예산을 소진하지 않고 즉시 다음 provider로
-          if (isCapacityError(response.status, bodyText)) {
-            console.warn(`[api/generate.js] Provider ${provider.name} 용량/서비스 오류 (status=${response.status}), 5초 후 즉시 다음 provider로 전환 (fail-fast)`);
-            await new Promise(resolve => setTimeout(resolve, FAIL_FAST_DELAY_MS));
-          } else {
-            console.warn(`[api/generate.js] Provider ${provider.name} error status=${response.status}, 다음 provider 시도`);
-          }
-        } catch (err) {
-          // 타임아웃(abort)과 실제 네트워크 에러 구분
-          if (err.name === 'TimeoutError' || err.name === 'AbortError' || (err.cause && err.cause.name === 'TimeoutError')) {
-            const elapsed = Date.now() - startTime;
-            providerFailures.push({ provider: provider.name, cause: `timeout after ${timeoutMs}ms (elapsed ${elapsed}ms)` });
-            console.warn(`[api/generate.js] Provider ${provider.name} timeout after ${timeoutMs}ms, 다음 provider 시도`);
-          } else {
-            providerFailures.push({ provider: provider.name, cause: `network error: ${err.message}` });
-            console.warn(`[api/generate.js] Provider ${provider.name} 네트워크 에러: ${err.message}, 다음 provider 시도`);
-          }
-        }
+    for (const provider of ANALYSIS_PROVIDERS) {
+      const providerKey = process.env[provider.apiKeyEnv];
+      if (!providerKey) {
+        providerFailures.push({ provider: provider.name, cause: 'skipped-no-api-key' });
+        continue; // 키 없으면 다음 provider로
       }
       
-      // 모든 provider 실패
+      // 제공자별 시스템 프롬프트 구성 (Gemini는 간결한 원칙 버전 사용)
+      const systemPrompt = buildSystemPrompt(inputs, provider.name);
+      
+      // 남은 예산 계산
+      const remainingMs = GLOBAL_DEADLINE_MS - (Date.now() - startTime);
+      if (remainingMs < MIN_ATTEMPT_MS) {
+        providerFailures.push({ provider: provider.name, cause: `skipped-deadline (remainingMs=${remainingMs})` });
+        console.warn(`[api/generate.js] Provider ${provider.name} 스킵: 전역 데드라인 소진 (남은 예산 ${remainingMs}ms < ${MIN_ATTEMPT_MS}ms)`);
+        continue; // fetch 자체를 시도하지 않음
+      }
+      
+      // 동적 타임아웃: 남은 예산과 provider 상한 중 작은 값
+      const timeoutMs = Math.min(remainingMs, PER_PROVIDER_CAP_MS);
+      
+      try {
+        data = await withRetry(
+          () => callProvider(provider, providerKey, systemPrompt, userPrompt, timeoutMs),
+          1 // 개별 provider 1회 재시도까지만 (체인 전체 재순회 방지)
+        );
+        // 성공 시 provider 정보 추가
+        data._provider = provider.name;
+        data._free = provider.free;
+        break;
+      } catch (err) {
+        if (err.isCapacity) {
+          providerFailures.push({ provider: provider.name, cause: `error status=${err.status}`, detail: err.bodyText?.substring(0, 200) });
+          console.warn(`[api/generate.js] Provider ${provider.name} 용량/서비스 오류 (status=${err.status}), 5초 후 즉시 다음 provider로 전환 (fail-fast)`);
+          await new Promise(resolve => setTimeout(resolve, FAIL_FAST_DELAY_MS));
+        } else if (err.name === 'TimeoutError' || err.name === 'AbortError' || (err.cause && err.cause.name === 'TimeoutError')) {
+          const elapsed = Date.now() - startTime;
+          providerFailures.push({ provider: provider.name, cause: `timeout after ${timeoutMs}ms (elapsed ${elapsed}ms)` });
+          console.warn(`[api/generate.js] Provider ${provider.name} timeout after ${timeoutMs}ms, 다음 provider 시도`);
+        } else if (err.status) {
+          providerFailures.push({ provider: provider.name, cause: `error status=${err.status}`, detail: err.bodyText?.substring(0, 200) });
+          console.warn(`[api/generate.js] Provider ${provider.name} error status=${err.status}, 다음 provider 시도`);
+        } else {
+          providerFailures.push({ provider: provider.name, cause: `network error: ${err.message}` });
+          console.warn(`[api/generate.js] Provider ${provider.name} 네트워크 에러: ${err.message}, 다음 provider 시도`);
+        }
+      }
+    }
+    
+    if (!data) {
+      // 모든 provider 실패 (원인은 서버 로그에만, 클라이언트에는 고정 메시지)
       const failureSummary = providerFailures.map(f => `${f.provider}=${f.cause}`).join(', ');
-      throw new Error(`모든 분석 provider 실패 (${failureSummary})`);
-    });
+      console.error(`[api/generate.js] 모든 분석 provider 실패: ${failureSummary}`);
+      return res.status(503).json({ error: '모든 생성 provider가 일시적으로 사용 불가합니다. 잠시 후 다시 시도해주세요.' });
+    }
     
     // API 에러 확인 (일부 provider가 error 필드 반환할 수 있음)
     if (data.error) {
@@ -739,7 +777,7 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('[api/generate.js] API Error:', error);
     
-    // 에러 유형별 응답 (공통)
+    // 에러 유형별 응답 (공통) — 내부 메시지 노출 없이 고정 메시지 사용 (1-5)
     if (error.status === 401 || error.message?.includes('Unauthorized') || error.message?.includes('invalid') || error.message?.includes('Invalid')) {
       return res.status(500).json({ error: 'API 키가 유효하지 않습니다. 환경변수를 확인해주세요.' });
     }
@@ -751,7 +789,7 @@ export default async function handler(req, res) {
     }
     
     return res.status(500).json({ 
-      error: error.message || '서버 내부 오류가 발생했습니다.' 
+      error: '서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
     });
   }
 }

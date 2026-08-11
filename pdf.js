@@ -152,6 +152,13 @@ async function downloadScriptPDF(scenes, state, title = '광고 기획안') {
     format: 'a4',
   });
 
+  // Korean font 등록 (제안서 PDF와 동일 — 미등록 시 한글 깨짐)
+  try {
+    await loadKoreanFont(doc);
+  } catch (e) {
+    console.warn('[pdf.js] 한글 폰트 로드 실패, 기본 폰트 사용:', e);
+  }
+
   // Korean font should already be registered; fall back to a safe font if not.
   try {
     doc.setFont('NotoSansKR');

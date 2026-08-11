@@ -15,12 +15,28 @@ import { kv } from '@vercel/kv';
 import { randomBytes } from 'crypto';
 
 const KV_PREFIX = 'review:';
+const REVIEW_TTL_SECONDS = 60 * 60 * 24; // 24h — 무제한 저장으로 KV가 차오르는 것 방지
+
+// 문자열 길이 상한 (검증)
+const MAX_TEXT_LEN = 2000;
+const MAX_MEMO_LEN = 2000;
+const VALID_STATUS = ['pending', 'approved', 'rejected'];
 
 // 추측 불가능한 랜덤 ID 생성 (base64url, 22자)
 function generateId() {
   // 16 bytes = 128 bits → base64url 인코딩 시 22자
   // 문자셋: A-Z, a-z, 0-9, -, _ (URL 안전)
   return randomBytes(16).toString('base64url');
+}
+
+// 검증: 문자열 + 길이 상한
+function isValidText(value, maxLen) {
+  return typeof value === 'string' && value.length <= maxLen;
+}
+
+// 검증: 배열 또는 null/undefined
+function isValidArray(value) {
+  return value === undefined || value === null || Array.isArray(value);
 }
 
 export default async function handler(req, res) {
@@ -53,7 +69,25 @@ export default async function handler(req, res) {
 
     // ── POST: 새 리뷰 생성 ──
     if (req.method === 'POST') {
-      const body = req.body;
+      const body = req.body || {};
+      
+      // 입력 검증 (1-4)
+      if (body.brandName !== undefined && !isValidText(body.brandName, MAX_TEXT_LEN)) {
+        return res.status(400).json({ error: 'brandName은 문자열이어야 하며 최대 2000자입니다.' });
+      }
+      if (body.productName !== undefined && !isValidText(body.productName, MAX_TEXT_LEN)) {
+        return res.status(400).json({ error: 'productName은 문자열이어야 하며 최대 2000자입니다.' });
+      }
+      if (body.script !== undefined && body.script !== null && typeof body.script !== 'object') {
+        return res.status(400).json({ error: 'script는 객체여야 합니다.' });
+      }
+      if (body.strategy !== undefined && body.strategy !== null && typeof body.strategy !== 'object') {
+        return res.status(400).json({ error: 'strategy는 객체여야 합니다.' });
+      }
+      if (!isValidArray(body.rationale)) {
+        return res.status(400).json({ error: 'rationale는 배열이어야 합니다.' });
+      }
+      
       const id = generateId();
       
       const reviewData = {
@@ -70,7 +104,7 @@ export default async function handler(req, res) {
       };
 
       const key = `${KV_PREFIX}${id}`;
-      await kv.set(key, reviewData);
+      await kv.set(key, reviewData, { ex: REVIEW_TTL_SECONDS });
       
       return res.status(201).json({ 
         success: true, 
@@ -86,6 +120,14 @@ export default async function handler(req, res) {
       if (!id) {
         return res.status(400).json({ error: 'id가 필요합니다.' });
       }
+      
+      // 상태 enum 검증 (1-4)
+      if (status !== undefined && status !== null && !VALID_STATUS.includes(status)) {
+        return res.status(400).json({ error: `status는 ${VALID_STATUS.join(', ')} 중 하나여야 합니다.` });
+      }
+      if (memo !== undefined && !isValidText(memo, MAX_MEMO_LEN)) {
+        return res.status(400).json({ error: 'memo는 문자열이어야 하며 최대 2000자입니다.' });
+      }
 
       const key = `${KV_PREFIX}${id}`;
       const existing = await kv.get(key);
@@ -96,12 +138,12 @@ export default async function handler(req, res) {
 
       const updated = {
         ...existing,
-        status: status || existing.status,
+        status: status !== undefined ? status : existing.status,
         memo: memo !== undefined ? memo : existing.memo,
         reviewedAt: reviewedAt || existing.reviewedAt
       };
 
-      await kv.set(key, updated);
+      await kv.set(key, updated, { ex: REVIEW_TTL_SECONDS });
       
       return res.status(200).json({ 
         success: true, 

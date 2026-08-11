@@ -59,13 +59,21 @@ function splitScenesEqually(scriptText, targetCount) {
   const wordsPerScene = Math.ceil(words.length / targetCount);
   const scenes = [];
   
+  // 60초 기준 균등 분할 타임라인 (m:ss 포맷 — 기존 i*3:00 분 오표기 수정, 3-5)
+  const totalDuration = 60;
+  const sceneDuration = totalDuration / targetCount;
+  
   for (let i = 0; i < targetCount; i++) {
     const start = i * wordsPerScene;
     const end = Math.min(start + wordsPerScene, words.length);
     const sceneWords = words.slice(start, end).join(' ');
     
+    const startSec = Math.round(i * sceneDuration);
+    const endSec = Math.round((i + 1) * sceneDuration);
+    const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    
     scenes.push({
-      time: `${i * 3}:00-${(i + 1) * 3}:00`,
+      time: `${fmt(startSec)}-${fmt(endSec)}`,
       description: sceneWords,
       dialogue: ''
     });

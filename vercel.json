@@ -19,6 +19,9 @@
     }
   ],
   "functions": {
+    "api/generate.js": {
+      "maxDuration": 300
+    },
     "api/benchmark.js": {
       "maxDuration": 300
     }

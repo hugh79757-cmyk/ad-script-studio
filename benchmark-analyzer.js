@@ -169,8 +169,12 @@ async function startBenchmark() {
 }
 
 // === 폴링 (setInterval 6s — GET /api/benchmark?id=) ===
+// 3-6: 세대(generation) 카운터 — 이전 폴링의 in-flight 콜백이 새 작업 결과를 덮어쓰지 못하도록
+let __bmPollGeneration = 0;
+
 function startPolling(jobId) {
   const startedAt = Date.now();
+  const generation = ++__bmPollGeneration; // 새 폴링 세대 (이전 in-flight 콜백 무효화)
 
   window.__bmTimer = setInterval(async () => {
     // 15분 초과 → 클라이언트 폴링 중단 (서버 failed(timeout)과 정합)
@@ -180,6 +184,9 @@ function startPolling(jobId) {
       setStartButtonReady();
       return;
     }
+
+    // 세대가 바뀌었으면(새 작업 시작/정리) 이전 콜백 결과는 무시
+    if (generation !== __bmPollGeneration) return;
 
     let data;
     try {
@@ -201,6 +208,7 @@ function startPolling(jobId) {
       return;
     }
 
+    if (generation !== __bmPollGeneration) return;
     if (!data || !data.stage) return;
 
     renderStepper(data.stage);

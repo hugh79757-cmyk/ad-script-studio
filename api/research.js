@@ -43,8 +43,12 @@ async function tavilySearch(query, apiKey) {
   });
 
   if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Tavily API 오류: ${response.status} — ${errText}`);
+    const errText = await response.text().catch(() => '');
+    // 원시 응답은 로그에만 기록 (클라이언트 노출 방지, 1-5)
+    console.error(`[research.js] Tavily API 오류: ${response.status} — ${errText}`);
+    const err = new Error(`Tavily API 오류: ${response.status}`);
+    err.status = response.status;
+    throw err;
   }
 
   return response.json();
@@ -316,7 +320,8 @@ export default async function handler(req, res) {
         results[q.key] = q.parser(tavilyResult, productName, brandName);
       } catch (err) {
         console.error(`[research.js] "${q.query}" 검색 실패:`, err.message);
-        errors.push({ query: q.query, error: err.message });
+        // 원인 상세는 로그로만, 클라이언트에는 상태 코드 기반 일반 메시지 (1-5)
+        errors.push({ query: q.query, error: `검색 실패 (${err.status || 'unknown'})` });
         // 실패 시 빈 값
         const emptyVal = q.key === 'reviews' || q.key === 'trustFactors' ? [] : '';
         results[q.key] = emptyVal;
@@ -334,7 +339,7 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('[research.js] 전체 오류:', error);
     return res.status(500).json({
-      error: error.message || '자동 조사 중 오류가 발생했습니다.'
+      error: '자동 조사 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
     });
   }
 }
