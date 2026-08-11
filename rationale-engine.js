@@ -605,6 +605,18 @@ function parseRationaleResponse(apiResponse) {
 }
 
 /**
+ * HTML 이스케이프 (XSS 방지) — 사용자/API 입력 기반 텍스트를 안전하게 렌더링
+ */
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
  * 당위성 근거 HTML 카드 생성 (그라운딩 표시 포함)
  */
 function renderRationaleCards(rationale) {
@@ -652,24 +664,24 @@ function renderRationaleCards(rationale) {
         ${rationale.map(item => `
           <div class="rationale-card" style="border-left: 4px solid ${typeColors[item.type] || '#666'}">
             <div class="card-header">
-              <span class="principle-id">${item.principleId}</span>
-              <span class="principle-name">${item.principleName}</span>
+              <span class="principle-id">${escapeHtml(item.principleId)}</span>
+              <span class="principle-name">${escapeHtml(item.principleName)}</span>
               <span class="principle-type" style="background-color: ${typeColors[item.type] || '#666'}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 8px;">
-                ${typeLabels[item.type] || item.type}
+                ${escapeHtml(typeLabels[item.type] || item.type)}
               </span>
             </div>
-            <div class="card-reason">${item.reason}</div>
+            <div class="card-reason">${escapeHtml(item.reason)}</div>
             ${item.usedFields && item.usedFields.length > 0 ? `
               <div class="card-grounding" style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #eee;">
                 <span style="font-size: 10px; color: #666;">참조 필드: </span>
                 ${item.usedFields.map(field => `
                   <span style="display: inline-block; background-color: ${fieldColors[field] || '#f5f5f5'}; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-right: 4px; border: 1px solid #e0e0e0;">
-                    ${getFieldLabel(field)}
+                    ${escapeHtml(getFieldLabel(field))}
                   </span>
                 `).join('')}
               </div>
             ` : ''}
-            ${item.example ? `<div class="card-example" style="font-size: 11px; color: #888; margin-top: 4px;">구현 예시: ${item.example}</div>` : ''}
+            ${item.example ? `<div class="card-example" style="font-size: 11px; color: #888; margin-top: 4px;">구현 예시: ${escapeHtml(item.example)}</div>` : ''}
           </div>
         `).join('')}
       </div>
