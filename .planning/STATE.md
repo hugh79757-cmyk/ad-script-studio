@@ -24,6 +24,12 @@ progress:
 | Current Phase | Phase 2 (쇼츠 렌더러) — 진행 중 |
 | Status | 🟡 **Phase 2 진행 중 — shorts-renderer.js 구현 완료, 테스트 27/32 통과, 4개 구현 버그 수정 필요** |
 
+## Quick Tasks Completed
+
+| Date | Slug | Deliverable | Status |
+|------|------|-------------|--------|
+| 2026-08-28 | youtube-transcript-skill | 글로벌 스킬 생성 (`~/.config/opencode/skills/youtube-transcript-extraction/SKILL.md`) — v1.2.4 API gotcha + 트랜스크립트 추출/MD저장 로직 보관 | complete ✓ |
+
 ## Milestone v2 Goals
 
 - **비전:** 하나의 콘텐츠 코어(상품/주제 정보 + 당위성 근거)로부터 쇼츠·카드뉴스·인포그래픽·롱폼 4개 포맷을 생성하는 **원소스 멀티유즈 콘텐츠 시스템**
